@@ -1,0 +1,41 @@
+@import "../../styles/variables"
+
+.status-bar
+  display: flex
+  align-items: center
+  justify-content: space-between
+  padding: $spacing-sm $spacing-lg
+  background: $color-bg-card
+  border-bottom: 1px solid $color-border
+
+  &__left
+    display: flex
+    align-items: center
+    gap: $spacing-md
+
+  &__title
+    font-size: 1.2rem
+    font-weight: 700
+    color: $color-primary-light
+    letter-spacing: 0.5px
+
+  &__indicator
+    display: flex
+    align-items: center
+    gap: $spacing-xs
+    font-size: 0.85rem
+
+    &-dot
+      width: 10px
+      height: 10px
+      border-radius: 50%
+      background: $color-danger
+      transition: background 0.3s
+
+      &--online
+        background: $color-success
+        box-shadow: 0 0 8px rgba($color-success, 0.5)
+
+  &__device
+    font-size: 0.8rem
+    color: $color-text-muted

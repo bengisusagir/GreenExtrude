@@ -1,0 +1,23 @@
+{
+  "name": "greenextrude-server",
+  "version": "1.0.0",
+  "description": "GreenExtrude Node.js backend with embedded MQTT broker (TypeScript)",
+  "main": "dist/server/src/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server/src/index.js",
+    "dev": "node --import tsx --watch src/index.ts"
+  },
+  "dependencies": {
+    "aedes": "^0.51.3",
+    "sql.js": "^1.11.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/sql.js": "^1.4.9",
+    "@types/ws": "^8.5.13",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0",
+    "tsx": "^4.19.0"
+  }
+}

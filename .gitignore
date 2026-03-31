@@ -1,0 +1,40 @@
+# Node modules
+node_modules/
+
+# Build outputs
+dist/
+build/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.*
+
+# SQLite database (server)
+server/greenextrude.db
+
+# VSCode settings
+.vscode/
+
+# Misc
+*.swp
+*.swo
+
+# Simulator logs
+simulator/.logs/
+
+# Client logs
+client/.logs/
+
+# Server logs
+server/.logs/

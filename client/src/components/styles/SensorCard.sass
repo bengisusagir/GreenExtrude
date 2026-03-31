@@ -1,0 +1,36 @@
+@import "../../styles/variables"
+
+.sensor-card
+  background: $color-bg-card
+  border: 1px solid $color-border
+  border-radius: $border-radius-lg
+  padding: $spacing-lg
+  transition: border-color 0.3s, transform 0.2s
+
+  &:hover
+    border-color: $color-primary
+    transform: translateY(-2px)
+
+  &__label
+    font-size: 0.85rem
+    color: $color-text-muted
+    margin-bottom: $spacing-xs
+    text-transform: uppercase
+    letter-spacing: 0.5px
+
+  &__value
+    font-size: 2rem
+    font-weight: 700
+    font-family: $font-mono
+    color: $color-text
+
+  &__unit
+    font-size: 0.9rem
+    color: $color-text-muted
+    margin-left: $spacing-xs
+
+  &--warning &__value
+    color: $color-warning
+
+  &--danger &__value
+    color: $color-danger
