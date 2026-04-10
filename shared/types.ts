@@ -49,3 +49,18 @@ export const MQTT_TOPICS = {
   COMMAND: "greenextrude/command",
   STATUS: "greenextrude/status",
 } as const;
+
+// ─── Sensor Thresholds ───
+export const SENSOR_THRESHOLDS = {
+  TEMPERATURE: {
+    WARNING: 215,
+    DANGER: 230,
+  },
+  FILAMENT_DIAMETER: {
+    TARGET: 2.85,
+    WARNING_MIN: 2.78,
+    WARNING_MAX: 2.92,
+    DANGER_MIN: 2.70,
+    DANGER_MAX: 3.00,
+  },
+} as const;

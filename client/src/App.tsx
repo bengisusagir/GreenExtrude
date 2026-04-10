@@ -1,30 +1,30 @@
-/**
- * App.tsx  —  Root component
- * ──────────────────────────
- * Responsibilities:
- *   1. Wrap the whole app in <TelemetryProvider> so every component can access
- *      live sensor data via the useTelemetry() hook (no prop-drilling).
- *   2. Render the persistent <StatusBar> header and the <Dashboard> page.
- *
- * Component tree:
- *   <TelemetryProvider>   ← opens & manages the WebSocket connection
- *     <StatusBar />        ← fixed header: server + device connection status
- *     <Dashboard />        ← sensor cards, control panel, telemetry log
- *   </TelemetryProvider>
- */
-
+import { useState } from "react";
 import { TelemetryProvider } from "./context/TelemetryContext";
-import StatusBar from "./components/StatusBar";
+import { TelemetryHealthProvider } from "./context/TelemetryHealthContext";
+import NavigationBar from "./components/NavigationBar";
 import Dashboard from "./pages/Dashboard";
+import Settings from "./pages/Settings";
 import "./App.sass";
 
+type Page = "dashboard" | "settings";
+
 export default function App() {
+  const [activePage, setActivePage] = useState<Page>("dashboard");
+
   return (
-    <TelemetryProvider>
-      <div className="dashboard">
-        <StatusBar />
-        <Dashboard />
-      </div>
-    </TelemetryProvider>
+    <TelemetryHealthProvider>
+      <TelemetryProvider>
+        <div className="app">
+          <NavigationBar
+            activePage={activePage}
+            onNavigate={setActivePage}
+          />
+          <div className="app__content">
+            {activePage === "dashboard" && <Dashboard />}
+            {activePage === "settings" && <Settings />}
+          </div>
+        </div>
+      </TelemetryProvider>
+    </TelemetryHealthProvider>
   );
 }

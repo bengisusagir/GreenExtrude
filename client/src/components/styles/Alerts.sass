@@ -1,0 +1,168 @@
+@import "../../styles/variables"
+
+.alerts
+  border-radius: $border-radius-lg
+  padding: $spacing-md
+  display: flex
+  flex-direction: column
+  gap: $spacing-sm
+
+  &__header
+    display: flex
+    justify-content: space-between
+    align-items: center
+
+  &__title-wrapper
+    display: flex
+    align-items: center
+    gap: $spacing-xs
+
+  &__title-bar
+    width: 3px
+    height: 16px
+    background: linear-gradient(180deg, $color-secondary, $color-primary)
+    border-radius: 2px
+    flex-shrink: 0
+
+  &__title
+    font-size: 0.85rem
+    font-weight: 600
+    color: $color-text
+    letter-spacing: 0.5px
+
+  &__badge
+    min-width: 24px
+    height: 24px
+    padding: 0 6px
+    border-radius: 6px
+    background: rgba($color-border, 0.5)
+    color: $color-text-secondary
+    font-size: 0.75rem
+    font-weight: 700
+    display: flex
+    align-items: center
+    justify-content: center
+    font-family: $font-mono
+    transition: all 0.3s
+
+    &--active
+      background: rgba($color-danger, 0.2)
+      color: #ef9a9a
+      box-shadow: 0 0 8px rgba($color-danger, 0.25)
+
+  &__divider
+    height: 1px
+    background: rgba($color-border, 0.6)
+    margin: 0
+
+  &__content
+    flex: 1
+    display: flex
+    flex-direction: column
+
+  &__empty
+    flex: 1
+    display: flex
+    flex-direction: column
+    align-items: center
+    justify-content: center
+    gap: 6px
+    padding: $spacing-lg 0
+    color: $color-text-secondary
+    font-size: 0.85rem
+    font-weight: 500
+
+  &__empty-icon
+    width: 48px
+    height: 48px
+    border-radius: 50%
+    background: rgba($color-success, 0.1)
+    border: 1px solid rgba($color-success, 0.25)
+    display: flex
+    align-items: center
+    justify-content: center
+    color: $color-success
+    margin-bottom: $spacing-xs
+
+  &__empty-sub
+    font-size: 0.75rem
+    color: rgba($color-text-secondary, 0.6)
+    font-weight: 400
+
+  &__list
+    display: flex
+    flex-direction: column
+    gap: $spacing-xs
+
+  &__item
+    display: flex
+    align-items: center
+    gap: $spacing-sm
+    padding: $spacing-xs $spacing-sm
+    border-radius: $border-radius
+
+  &__item-badge
+    font-size: 0.65rem
+    font-weight: 700
+    font-family: $font-mono
+    letter-spacing: 0.5px
+    padding: 2px 5px
+    border-radius: 4px
+    border: 1px solid
+    flex-shrink: 0
+
+  &__item-message
+    flex: 1
+    font-size: 0.8rem
+    color: $color-text-secondary
+    line-height: 1.4
+
+  &__item-time
+    font-size: 0.7rem
+    color: rgba($color-text-secondary, 0.5)
+    font-family: $font-mono
+    flex-shrink: 0
+
+
+  &__content
+    flex: 1
+    display: flex
+    align-items: center
+    justify-content: center
+    min-height: 120px
+
+  &__empty
+    color: $color-text-secondary
+    font-size: 0.9rem
+    text-align: center
+
+  &__list
+    width: 100%
+    display: flex
+    flex-direction: column
+    gap: $spacing-xs
+
+  &__item
+    display: flex
+    align-items: center
+    gap: $spacing-xs
+    padding: $spacing-xs $spacing-sm
+    border-radius: $border-radius
+    background: rgba($color-bg-card-hover, 0.3)
+
+    &--warning
+      border-left: 3px solid $color-warning
+
+    &--danger
+      border-left: 3px solid $color-danger
+
+    &--info
+      border-left: 3px solid $color-secondary
+
+  &__item-icon
+    font-size: 1rem
+    flex-shrink: 0
+
+  &__item-message
+    font-size: 0.8rem
+    color: $color-text-secondary

@@ -53,7 +53,7 @@ Built as a Capstone Project at Bahçeşehir University by a joint Mechatronics +
 | MQTT Broker | Aedes (embedded in Node) | Routes messages between device and server logic |
 | Backend | Node.js + TypeScript (no framework) | Persists data, exposes REST + WebSocket |
 | Database | sql.js (SQLite in-memory, saved to file) | Store-and-forward telemetry log |
-| Frontend | React 18 + TypeScript + SASS | Live dashboard, control panel |
+| Frontend | React 18 + TypeScript + SASS | Live dashboard, settings & control |
 
 ---
 
@@ -81,7 +81,7 @@ GreenExtrude/
 │   ├── package.json
 │   ├── tsconfig.json
 │   └── src/
-│       └── index.ts            ← Connects via MQTT, publishes fake sensor data every 2 s
+│       └── index.ts            ← Connects via MQTT, publishes fake sensor data every 1 s
 │
 └── client/                     ← React dashboard
     ├── package.json
@@ -90,27 +90,42 @@ GreenExtrude/
     │   └── index.html
     └── src/
         ├── index.tsx           ← React root mount
-        ├── App.tsx             ← Root component: wraps providers, renders layout
+        ├── App.tsx             ← Root component: routing + providers
         ├── App.sass
         ├── react-app-env.d.ts
         │
-        ├── shared/
-        │   └── types.ts        ← Local copy of shared types for the client
-        │
         ├── context/
-        │   └── TelemetryContext.tsx  ← React Context: distributes live data to all components
+        │   ├── TelemetryContext.tsx     ← React Context: distributes live data to all components
+        │   └── TelemetryHealthContext.tsx ← Health monitoring for telemetry data stream
         │
         ├── hooks/
         │   └── useWebSocket.ts ← Manages WS connection, reconnect, message parsing
         │
         ├── pages/
-        │   └── Dashboard.tsx   ← Main page: sensor grid + controls row
+        │   ├── Dashboard.tsx   ← Main page: gauges, chart, status, alerts
+        │   └── Settings.tsx    ← Settings: PID controls, motor slider, buttons
         │
         ├── components/
-        │   ├── StatusBar.tsx   ← Fixed header: server & device connection indicators
-        │   ├── SensorCard.tsx  ← Individual sensor value card with alert colour
-        │   ├── ControlPanel.tsx← START / STOP / EMERGENCY STOP buttons
-        │   └── TelemetryLog.tsx← Scrollable table of recent readings
+        │   ├── NavigationBar.tsx   ← Top navigation, connection status
+        │   ├── TemperatureGauge.tsx ← Visual temperature gauge
+        │   ├── DiameterChart.tsx   ← Filament diameter chart
+        │   ├── MotorRPM.tsx        ← Motor speed gauge/display
+        │   ├── SystemStatus.tsx    ← Device status panel
+        │   └── Alerts.tsx          ← Alerts panel
+        │   └── styles/             ← Component-specific styles
+        │       ├── NavigationBar.sass
+        │       ├── TemperatureGauge.sass
+        │       ├── DiameterChart.sass
+        │       ├── MotorRPM.sass
+        │       ├── SystemStatus.sass
+        │       └── Alerts.sass
+        │
+        ├── pages/
+        │   ├── Dashboard.tsx       ← Main dashboard page
+        │   ├── Settings.tsx        ← Settings page
+        │   └── styles/             ← Page-specific styles
+        │       ├── Dashboard.sass
+        │       └── Settings.sass
         │
         └── styles/
             ├── _variables.sass ← Design tokens (colours, fonts, spacing)
@@ -138,14 +153,14 @@ WebSocket Server  (server/src/index.ts  :3002)
 useWebSocket.ts  (client hook)
   │  case "telemetry" → setTelemetry(data)  +  appends to history ring-buffer (max 100)
   ▼
-TelemetryContext  →  SensorCard / TelemetryLog / StatusBar  re-render
+TelemetryContext  →  Dashboard components re-render
 ```
 
 ### Commands — Dashboard → Device
 
 ```
-ControlPanel button click  (client)
-  │  sendCommand({ type: "START" | "STOP" | "EMERGENCY_STOP" })
+Settings page button click  (client)
+  │  sendCommand({ type: "START" | "STOP" | "EMERGENCY_STOP" | "SET_MOTOR_SPEED" })
   ▼
 WebSocket  →  server receives  { type: "command", payload: DeviceCommand }
   ▼
@@ -157,12 +172,12 @@ Simulator / ESP32  client.on("message")  →  executes command, adjusts state
 
 ### Initial History on Connect
 
-When a browser opens the dashboard, the server immediately sends the last 50 telemetry rows from SQLite so the log is not empty:
+When a browser opens the dashboard, the server immediately sends the last 50 telemetry rows from SQLite:
 
 ```
 ws.on("connection")
   → getRecentTelemetry(50)
-  → { type: "history", payload: TelemetryData[] }   (sent once, on connect)
+  → { type: "history", payload: TelemetryData[] }
 ```
 
 ---
@@ -198,6 +213,7 @@ ws.on("connection")
 | `react-scripts` (CRA) | Webpack + Babel build toolchain, dev server |
 | `sass` | SASS/SCSS stylesheet compilation |
 | `typescript` | Static typing |
+| `react-gauge-component` | Temperature gauge visualization |
 
 ---
 
@@ -253,9 +269,9 @@ npm start            # node dist/server/src/index.js — runs compiled output
 Mimics an ESP32 running MicroPython/Arduino firmware:
 
 - Connects to `mqtt://localhost:1883` with client ID `esp32-simulator-01`.
-- Publishes `TelemetryData` JSON to `greenextrude/telemetry` **every 2 seconds**.
+- Publishes `TelemetryData` JSON to `greenextrude/telemetry` **every 1 second**.
 - Adds realistic random noise to each sensor value.
-- Subscribes to `greenextrude/command` and executes all six command types:
+- Subscribes to `greenextrude/command` and executes all command types:
 
 | Command | Effect in simulator |
 |---|---|
@@ -293,21 +309,31 @@ npm run build && npm start
 ### Component tree
 
 ```
-<TelemetryProvider>              context/TelemetryContext.tsx
-  <div.dashboard>
-    <StatusBar />                Server Online/Offline + Device Connected/Disconnected
-    <Dashboard>                  pages/Dashboard.tsx
-      <section.sensors>
-        <SensorCard /> ×6        one per sensor channel, with colour-coded alert state
-      </section>
-      <section.controls-row>
-        <ControlPanel />         START / STOP / EMERGENCY STOP buttons
-        <TelemetryLog />         scrollable table of the last 100 readings
-      </section>
-    </Dashboard>
-  </div>
-</TelemetryProvider>
+<TelemetryHealthProvider>         context/TelemetryHealthContext.tsx
+  <TelemetryProvider>              context/TelemetryContext.tsx
+    <div.app>
+      <NavigationBar />            Navigation + connection status indicator
+      <Dashboard />                pages/Dashboard.tsx (default page)
+        <TemperatureGauge /> ×2    Zone 1 & Zone 2 temperature displays
+        <DiameterChart />          Filament diameter history chart
+        <MotorRPM />               Motor RPM gauge
+        <SystemStatus />           Device info panel
+        <Alerts />                 Alerts panel
+      <Settings />                 pages/Settings.tsx (accessible via nav)
+        PID inputs                 P-Gain, I-Gain, D-Gain controls
+        Motor slider               Speed control
+        Buttons                    Apply & Start, Emergency Stop
+    </div>
+  </TelemetryProvider>
+</TelemetryHealthProvider>
 ```
+
+### Pages
+
+| Page | Features |
+|---|---|
+| **Dashboard** | Temperature gauges, diameter chart, motor RPM, system status, alerts |
+| **Settings** | PID control inputs, motor speed slider, Apply button, Emergency Stop |
 
 ### State — TelemetryContext values
 
@@ -319,17 +345,9 @@ npm run build && npm start
 | `isConnected` | `boolean` | WebSocket to server is open |
 | `sendCommand` | `(cmd: DeviceCommand) => void` | Sends a command over WebSocket |
 
-### Alert thresholds (computed in Dashboard.tsx)
-
-| Sensor | Warning | Danger |
-|---|---|---|
-| Any temperature zone | > 215 °C | > 230 °C |
-| Filament diameter | < 2.78 mm or > 2.92 mm | < 2.70 mm or > 3.00 mm |
-
 ### WebSocket reconnect behaviour
 
-`useWebSocket.ts` retries the connection every **3 seconds** if the server is unreachable.  
-All control buttons are `disabled` while `isConnected === false` to prevent lost commands.
+`useWebSocket.ts` retries the connection every **3 seconds** if the server is unreachable.
 
 ### npm scripts
 
@@ -345,7 +363,7 @@ npm run build        # production bundle → client/build/
 ### `GET /api/health`
 
 ```json
-{ "success": true, "status": "running", "timestamp": "2026-03-29T10:00:00.000Z" }
+{ "success": true, "status": "running", "timestamp": "2026-04-05T10:00:00.000Z" }
 ```
 
 ### `GET /api/telemetry?limit=50`
@@ -362,7 +380,7 @@ npm run build        # production bundle → client/build/
       "motor_speed": 30.3,
       "filament_diameter": 2.86,
       "winder_speed": 25.1,
-      "timestamp": "2026-03-29T10:00:00.000Z"
+      "timestamp": "2026-04-05T10:00:00.000Z"
     }
   ]
 }
@@ -391,7 +409,7 @@ Response:
 ### Server → Client
 
 ```typescript
-{ type: "telemetry",     payload: TelemetryData }          // ~every 2 s
+{ type: "telemetry",     payload: TelemetryData }          // ~every 1 s
 { type: "history",       payload: TelemetryData[] }        // once, on connect
 { type: "device_status", payload: DeviceStatusMessage }    // on MQTT connect/disconnect
 ```
@@ -416,13 +434,12 @@ Response:
 
 ## 🚦 Sensor Thresholds & Alerts
 
-`SensorCard` receives a `status` prop that controls its visual indicator:
+Alert thresholds can be configured in the Dashboard and Alerts components:
 
-| `status` prop | Colour | Meaning |
+| Sensor | Warning | Danger |
 |---|---|---|
-| `"normal"` | Default | Value within safe range |
-| `"warning"` | Orange | Approaching limits — investigate |
-| `"danger"` | Red | Outside safe range — immediate action required |
+| Any temperature zone | > 215 °C | > 230 °C |
+| Filament diameter (target: 2.85 mm) | < 2.78 mm or > 2.92 mm | < 2.70 mm or > 3.00 mm |
 
 ---
 

@@ -1,0 +1,122 @@
+@import "../../styles/variables"
+
+.nav-bar
+  display: flex
+  align-items: center
+  justify-content: space-between
+  padding: $spacing-sm $spacing-xl
+  background: $color-bg-card
+  border-bottom: 1px solid $color-border
+  height: 60px
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2)
+
+  &__logo
+    font-size: 1.4rem
+    font-weight: 700
+    letter-spacing: 0.5px
+
+    &-green
+      color: $color-primary
+
+    &-white
+      color: $color-text
+
+  &__nav
+    display: flex
+    gap: $spacing-xl
+
+  &__link
+    color: $color-text-secondary
+    text-decoration: none
+    font-size: 0.9rem
+    font-weight: 500
+    transition: color 0.2s
+    padding: $spacing-xs 0
+    position: relative
+
+    &--active
+      color: $color-text
+
+      &::after
+        content: ""
+        position: absolute
+        bottom: 0
+        left: 0
+        right: 0
+        height: 2px
+        background: $color-secondary
+
+    &:hover:not(&--active)
+      color: $color-text
+
+  &__actions
+    display: flex
+    align-items: center
+    gap: $spacing-md
+
+  &__bell
+    position: relative
+    background: transparent
+    border: none
+    cursor: pointer
+    color: $color-text-secondary
+    padding: $spacing-xs
+    transition: color 0.2s
+
+    &:hover
+      color: $color-text
+
+  &__notification-dot
+    position: absolute
+    top: 0
+    right: 0
+    width: 8px
+    height: 8px
+    background: $color-danger
+    border-radius: 50%
+    border: 2px solid $color-bg-card
+
+  &__avatar
+    cursor: pointer
+
+    svg
+      transition: transform 0.2s
+
+    &:hover svg
+      transform: scale(1.1)
+
+  &__system-status
+    display: flex
+    align-items: center
+    gap: 8px
+    padding: 6px 12px
+    background: rgba($color-bg, 0.5)
+    border-radius: 12px
+    border: 1px solid $color-border
+
+  &__status-dot
+    width: 10px
+    height: 10px
+    border-radius: 50%
+    background: $color-danger
+    animation: none
+
+    &--online
+      background: $color-success
+      box-shadow: 0 0 8px rgba($color-success, 0.6)
+      animation: pulse-dot 2s infinite
+
+  &__status-text
+    font-size: 0.75rem
+    font-weight: 700
+    letter-spacing: 1px
+    color: $color-danger
+
+    &--online
+      color: $color-success
+
+@keyframes pulse-dot
+  0%, 100%
+    opacity: 1
+  50%
+    opacity: 0.3

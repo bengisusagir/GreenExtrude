@@ -1,79 +1,34 @@
-/**
- * TelemetryContext.tsx
- * ────────────────────
- * React Context that makes live sensor data available to every component in
- * the tree — without having to pass props through every level.
- *
- * HOW IT WORKS
- * ────────────
- * 1. <TelemetryProvider> opens a WebSocket connection to the Node server
- *    (via the useWebSocket hook) and stores the incoming data in state.
- * 2. Any child component can call useTelemetry() to read that data or
- *    send control commands to the device.
- *
- * USAGE
- * ─────
- *   // Wrap your app once (already done in App.tsx):
- *   <TelemetryProvider>
- *     <YourComponent />
- *   </TelemetryProvider>
- *
- *   // Inside any child component:
- *   const { telemetry, isConnected, sendCommand } = useTelemetry();
- */
-
-/**
- * TelemetryLog.tsx
- * ────────────────
- * Scrollable table showing the last HISTORY_MAX_LENGTH telemetry readings.
- * Newest reading is always at the top (the history array is reversed before rendering).
- *
- * Each row = one MQTT message published by the device (every ~2 seconds from the simulator).
- * The table is read-only; users cannot edit values here.
- *
- * Reads `history` from TelemetryContext — no props required.
- */
+# TO DO List
+ * Allerts comp should be edit
+ * Charts sometimes shows wrong place (5 sec after reflesh its breaking down)
+ * Data time comming from device should be check
+ * EXTRUDER MOTOR RPM control should be check. Rn in settings it just for demonstrate the speed
+ * TemperatureGauge should check (calculations etc)
+ * Sass files should clean (unused and unneccessary things)
 
 
-/**
- * StatusBar.tsx
- * ─────────────
- * Fixed header shown at the top of every page.
- *
- * Displays two connection indicators:
- *   • Server  — WebSocket connection from the browser to the Node server.
- *   • Device  — MQTT connection from the ESP32 (or simulator) to the server.
- *
- * Reads state from TelemetryContext — no props required.
- */
 
-/**
- * SensorCard.tsx
- * ──────────────
- * Displays a single live sensor reading inside a coloured card.
- *
- * The `status` prop controls the card's visual state:
- *   "normal"  → default dark card  (value is within the safe range)
- *   "warning" → orange border/bg   (approaching the safe-range limit)
- *   "danger"  → red border/bg      (outside the safe range — take action)
- *
- * Status thresholds are calculated in utils/thresholds.ts and passed in
- * by the parent (Dashboard.tsx), keeping this component purely presentational.
- */
 
-/**
- * ControlPanel.tsx
- * ────────────────
- * Provides three machine control buttons:
- *   ▶ Start          — tells the extruder to begin the filament cycle
- *   ■ Stop           — graceful shutdown
- *   ⚠ Emergency Stop — immediate power-cut to all motors and heaters
+
+ /**
+ * useWebSocket.ts
+ * ───────────────
+ * Custom React hook that manages the WebSocket connection to the Node server.
  *
- * Clicking a button calls sendCommand(), which sends a JSON message over the
- * WebSocket → Node server → MQTT broker → ESP32 (or simulator).
+ * What it does:
+ *   1. Opens a WebSocket to WS_URL on mount.
+ *   2. Parses every incoming JSON message and updates the appropriate state.
+ *   3. Auto-reconnects every 3 seconds if the connection drops.
+ *   4. Cleans up the socket and any pending timers on unmount.
  *
- * All buttons are disabled while isConnected is false to prevent
- * sending commands into the void when the server is unreachable.
+ * Message types handled (defined in shared/types.ts → WsMessageType):
+ *   "telemetry"     → latest sensor snapshot from the device
+ *   "history"       → array of recent readings sent on first connect
+ *   "device_status" → MQTT client connected / disconnected event
  *
- * Reads state from TelemetryContext — no props required.
+ * This hook is consumed only by TelemetryContext — you shouldn't need to
+ * call it directly from components.
  */
+ 
+
+

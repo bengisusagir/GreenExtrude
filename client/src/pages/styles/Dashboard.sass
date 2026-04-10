@@ -1,0 +1,96 @@
+@import "../../styles/variables"
+
+.dashboard
+  &__new-layout
+    display: flex
+    flex-direction: column
+    min-height: calc(100vh - 60px)
+    background: $color-bg
+
+  &__offline-banner
+    background: linear-gradient(135deg, $color-danger 0%, #d32f2f 100%)
+    color: white
+    text-align: center
+    padding: $spacing-sm
+    font-weight: 600
+    font-size: 0.9rem
+    animation: pulse 2s infinite
+    box-shadow: 0 2px 8px rgba($color-danger, 0.3)
+
+  &__content-new
+    flex: 1
+    display: grid
+    grid-template-columns: 1fr 360px
+    gap: $spacing-lg
+    padding: $spacing-md
+    max-width: 1600px
+    margin: 0 auto
+    width: 100%
+    box-sizing: border-box
+
+    // Tablet: sağ kolon alta geçer, 2'li grid olur
+    @media (max-width: $breakpoint-lg)
+      grid-template-columns: 1fr
+      gap: $spacing-md
+      padding: $spacing-md
+
+    // Mobile
+    @media (max-width: $breakpoint-sm)
+      padding: $spacing-sm
+      gap: $spacing-sm
+
+  &__left-column
+    display: flex
+    flex-direction: column
+    gap: $spacing-md
+    min-width: 0
+
+    @media (max-width: $breakpoint-sm)
+      gap: $spacing-sm
+
+  &__right-column
+    display: flex
+    flex-direction: column
+    gap: $spacing-md
+    min-width: 0
+
+    // Tablet: 3 kart yan yana
+    @media (max-width: $breakpoint-lg) and (min-width: calc($breakpoint-md + 1px))
+      display: grid
+      grid-template-columns: 1fr 1fr 1fr
+      align-items: start
+
+    @media (max-width: $breakpoint-sm)
+      gap: $spacing-sm
+
+  &__gauges-row
+    display: grid
+    grid-template-columns: 1fr 1fr
+    gap: $spacing-md
+
+    @media (max-width: $breakpoint-md)
+      grid-template-columns: 1fr
+      gap: $spacing-sm
+
+  &__chart-row
+    flex: 1
+    min-height: 300px
+
+  &__motor-rpm-row,
+  &__system-status-row
+    min-width: 0
+
+  &__alerts-row
+    flex: 1
+    display: flex
+    flex-direction: column
+    min-width: 0
+
+    .alerts
+      flex: 1
+
+@keyframes pulse
+  0%, 100%
+    opacity: 1
+  50%
+    opacity: 0.7

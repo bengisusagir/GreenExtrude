@@ -1,116 +1,77 @@
-/**
- * Dashboard.tsx
- * ─────────────
- * The main (and only) page of the GreenExtrude monitoring app.
- *
- * Layout
- * ──────
- *   ┌──────────────────────────────────────────────────────┐
- *   │  [Zone 1]  [Zone 2]  [Zone 3]  [Motor]  [⌀]  [Wind] │  ← sensor grid
- *   ├──────────────────────┬───────────────────────────────┤
- *   │   Machine Control    │       Telemetry Log           │  ← controls row
- *   └──────────────────────┴───────────────────────────────┘
- *
- * Data comes from TelemetryContext — no props needed.
- * Alert colours are calculated by the helpers in utils/thresholds.ts.
- */
-
-import SensorCard from "../components/SensorCard";
-import ControlPanel from "../components/ControlPanel";
-import TelemetryLog from "../components/TelemetryLog";
 import { useTelemetry } from "../context/TelemetryContext";
-
-type SensorStatus = "normal" | "warning" | "danger";
-
-function getTempStatus(temp: number | undefined): SensorStatus {
-  if (temp === undefined) return "normal";
-  if (temp > 230) return "danger";
-  if (temp > 215) return "warning";
-  return "normal";
-}
-
-function getDiameterStatus(d: number | undefined): SensorStatus {
-  if (d === undefined) return "normal";
-  if (d < 2.70 || d > 3.00) return "danger";
-  if (d < 2.78 || d > 2.92) return "warning";
-  return "normal";
-}
+import TemperatureGauge from "../components/TemperatureGauge";
+import DiameterChart from "../components/DiameterChart";
+import MotorRPMSlider from "../components/MotorRPM";
+import SystemStatus from "../components/SystemStatus";
+import Alerts from "../components/Alerts";
+import "./styles/Dashboard.sass";
 
 export default function Dashboard() {
-  const { telemetry, isConnected } = useTelemetry();
+  const { telemetry, isConnected, history } = useTelemetry();
+
+  const chartData = history
+    .slice(-20)
+    .reverse()
+    .map((item) => ({
+      time: item.timestamp
+        ? new Date(
+            item.timestamp.endsWith("Z") || item.timestamp.includes("+")
+              ? item.timestamp
+              : item.timestamp.replace(" ", "T") + "Z"
+          ).toLocaleTimeString("en-US", {
+            hour12: false,
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+          })
+        : "--:--:--",
+      diameter: item.filament_diameter ?? 0,
+    }));
 
   return (
-    <main className="dashboard__content">
-
-      {/* ── Offline Banner ───────────────────────────────────────────────────
-          Shown when the WebSocket to the server is closed.
-          isConnected becomes false within seconds of losing the connection. */}
+    <main className="dashboard__new-layout">
       {!isConnected && (
-        <div className="dashboard__offline-banner">
-          ⚠ System Offline — Dashboard cannot reach the server. Data may be buffered locally.
-        </div>
+        <div className="dashboard__offline-banner">System Offline</div>
       )}
 
-      {/* ── Sensor Cards ─────────────────────────────────────────────────────
-          Each card shows one live reading.
-          The `status` prop controls the card's border/background colour:
-            "normal"  → default  (no highlight)
-            "warning" → orange   (approaching limit)
-            "danger"  → red      (outside safe range) */}
-      <section className="dashboard__sensors">
+      <div className="dashboard__content-new">
+        <div className="dashboard__left-column">
+          <div className="dashboard__gauges-row">
+            <TemperatureGauge
+              title="HEATING ZONE 1"
+              temperature={telemetry?.temperature_zone1 ?? 0}
+              setPoint={220}
+            />
+            <TemperatureGauge
+              title="HEATING ZONE 2"
+              temperature={telemetry?.temperature_zone2 ?? 0}
+              setPoint={215}
+            />
+          </div>
 
-        <SensorCard
-          label="Zone 1 — Feed"
-          value={telemetry?.temperature_zone1 ?? "—"}
-          unit="°C"
-          status={getTempStatus(telemetry?.temperature_zone1)}
-        />
+          <div className="dashboard__chart-row">
+            <DiameterChart
+              data={chartData}
+              currentValue={telemetry?.filament_diameter}
+              target={2.85}
+            />
+          </div>
+        </div>
 
-        <SensorCard
-          label="Zone 2 — Melt"
-          value={telemetry?.temperature_zone2 ?? "—"}
-          unit="°C"
-          status={getTempStatus(telemetry?.temperature_zone2)}
-        />
+        <div className="dashboard__right-column">
+          <div className="dashboard__motor-rpm-row">
+            <MotorRPMSlider rpm={telemetry?.motor_speed ?? 0} />
+          </div>
 
-        <SensorCard
-          label="Zone 3 — Nozzle"
-          value={telemetry?.temperature_zone3 ?? "—"}
-          unit="°C"
-          status={getTempStatus(telemetry?.temperature_zone3)}
-        />
+          <div className="dashboard__system-status-row">
+            <SystemStatus />
+          </div>
 
-        <SensorCard
-          label="Motor Speed"
-          value={telemetry?.motor_speed ?? "—"}
-          unit="RPM"
-          /* No thresholds defined for motor speed yet */
-        />
-
-        <SensorCard
-          label="Filament Diameter"
-          value={telemetry?.filament_diameter ?? "—"}
-          unit="mm"
-          status={getDiameterStatus(telemetry?.filament_diameter)}
-        />
-
-        <SensorCard
-          label="Winder Speed"
-          value={telemetry?.winder_speed ?? "—"}
-          unit="RPM"
-          /* No thresholds defined for winder speed yet */
-        />
-
-      </section>
-
-      {/* ── Controls Row ─────────────────────────────────────────────────────
-          Left  → ControlPanel  (START / STOP / EMERGENCY STOP buttons)
-          Right → TelemetryLog  (scrollable table of recent readings) */}
-      <section className="dashboard__controls-row">
-        <ControlPanel />
-        <TelemetryLog />
-      </section>
-
+          <div className="dashboard__alerts-row">
+            <Alerts alerts={[]} />
+          </div>
+        </div>
+      </div>
     </main>
   );
 }

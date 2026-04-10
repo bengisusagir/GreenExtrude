@@ -21,8 +21,8 @@ export type CommandType =
 
 export interface DeviceCommand {
   type: CommandType;
-  zone?: number;
-  value?: number;
+  zone?: number;       // which heating zone (1, 2, 3)
+  value?: number;      // target value
   timestamp?: string;
 }
 
@@ -48,4 +48,19 @@ export const MQTT_TOPICS = {
   TELEMETRY: "greenextrude/telemetry",
   COMMAND: "greenextrude/command",
   STATUS: "greenextrude/status",
+} as const;
+
+// ─── Sensor Thresholds ───
+export const SENSOR_THRESHOLDS = {
+  TEMPERATURE: {
+    WARNING: 215,
+    DANGER: 230,
+  },
+  FILAMENT_DIAMETER: {
+    TARGET: 2.85,
+    WARNING_MIN: 2.78,
+    WARNING_MAX: 2.92,
+    DANGER_MIN: 2.70,
+    DANGER_MAX: 3.00,
+  },
 } as const;

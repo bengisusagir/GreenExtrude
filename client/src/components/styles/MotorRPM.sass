@@ -1,0 +1,201 @@
+@import "../../styles/variables"
+
+.motor-rpm-slider
+  border-radius: $border-radius-lg
+  padding: $spacing-md
+  display: flex
+  flex-direction: column
+  gap: $spacing-sm
+
+  &__header
+    display: flex
+    justify-content: space-between
+    align-items: center
+    margin-bottom: $spacing-xs
+
+  &__title-wrapper
+    display: flex
+    align-items: center
+    gap: $spacing-xs
+
+  &__title-bar
+    width: 3px
+    height: 16px
+    background: linear-gradient(180deg, $color-secondary, $color-primary)
+    border-radius: 2px
+    flex-shrink: 0
+
+  &__title
+    font-size: 0.85rem
+    font-weight: 600
+    color: $color-text
+    letter-spacing: 0.5px
+
+  &__icon
+    flex-shrink: 0
+    opacity: 0.7
+
+  &__value
+    display: flex
+    align-items: baseline
+    gap: 6px
+    justify-content: center
+    padding: $spacing-sm 0
+    background: rgba($color-border, 0.3)
+    border-radius: $border-radius
+    margin: $spacing-xs 0
+
+  &__value-number
+    font-size: 2.8rem
+    font-weight: 700
+    color: $color-text
+    line-height: 1
+    font-family: $font-mono
+
+    @media (max-width: $breakpoint-lg)
+      font-size: 2rem
+
+  &__value-unit
+    font-size: 1rem
+    color: $color-text-secondary
+    font-weight: 600
+    align-self: flex-end
+
+  &__slider-container
+    position: relative
+    margin-top: $spacing-sm
+
+  &__input
+    -webkit-appearance: none
+    width: 100%
+    height: 6px
+    border-radius: 3px
+    background: #2A3448
+    outline: none
+    cursor: pointer
+
+    &::-webkit-slider-thumb
+      -webkit-appearance: none
+      appearance: none
+      width: 18px
+      height: 18px
+      border-radius: 4px
+      background: $color-secondary
+      cursor: pointer
+      position: relative
+      z-index: 2
+      box-shadow: 0 0 8px rgba($color-secondary, 0.4)
+
+    &::-moz-range-thumb
+      width: 18px
+      height: 18px
+      border-radius: 4px
+      background: $color-secondary
+      cursor: pointer
+      border: none
+      box-shadow: 0 0 8px rgba($color-secondary, 0.4)
+
+    background: linear-gradient(to right, $color-secondary var(--progress, 45%), #2A3448 var(--progress, 45%))
+
+  &__slider-label
+    text-align: center
+    font-size: 0.75rem
+    color: $color-text-secondary
+    margin-top: $spacing-xs
+    font-weight: 500
+    letter-spacing: 0.3px
+
+  &__slider-min,
+  &__slider-max
+    position: absolute
+    top: 20px
+    font-size: 0.7rem
+    color: $color-text-secondary
+    font-weight: 500
+
+  &__slider-min
+    left: 0
+
+  &__slider-max
+    right: 0
+
+
+  &__value
+    display: flex
+    align-items: baseline
+    gap: 4px
+    justify-content: center
+    margin: $spacing-xs 0
+
+  &__value-number
+    font-size: 2rem
+    font-weight: 700
+    color: $color-text
+    line-height: 1
+
+  &__value-unit
+    font-size: 0.9rem
+    color: $color-text-secondary
+    font-weight: 600
+
+  &__slider-container
+    position: relative
+    margin-top: $spacing-sm
+
+  &__input
+    -webkit-appearance: none
+    width: 100%
+    height: 6px
+    border-radius: 3px
+    background: #2A3448
+    outline: none
+    cursor: pointer
+
+    &::-webkit-slider-thumb
+      -webkit-appearance: none
+      appearance: none
+      width: 16px
+      height: 16px
+      border-radius: 2px
+      background: #FFFFFF
+      cursor: pointer
+      position: relative
+      z-index: 2
+
+      // Triangle pointing down
+      clip-path: polygon(50% 100%, 0% 0%, 100% 0%)
+
+    &::-moz-range-thumb
+      width: 16px
+      height: 16px
+      border-radius: 2px
+      background: #FFFFFF
+      cursor: pointer
+      border: none
+
+      // Triangle pointing down
+      clip-path: polygon(50% 100%, 0% 0%, 100% 0%)
+
+    // Dynamic gradient fill for the slider track
+    background: linear-gradient(to right, $color-secondary var(--progress, 45%), #2A3448 var(--progress, 45%))
+
+  &__slider-label
+    text-align: center
+    font-size: 0.75rem
+    color: $color-text-secondary
+    margin-top: $spacing-xs
+    font-weight: 500
+
+  &__slider-min,
+  &__slider-max
+    position: absolute
+    top: 20px
+    font-size: 0.7rem
+    color: $color-text-secondary
+    font-weight: 500
+
+  &__slider-min
+    left: 0
+
+  &__slider-max
+    right: 0
