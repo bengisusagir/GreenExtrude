@@ -1,0 +1,237 @@
+@import "../../styles/variables"
+
+.settings
+  display: flex
+  justify-content: center
+  align-items: center
+  min-height: calc(100vh - 60px)
+  background: $color-bg
+  padding: $spacing-xl
+
+  @media (max-width: $breakpoint-md)
+    padding: $spacing-lg
+
+  @media (max-width: $breakpoint-sm)
+    padding: $spacing-sm
+
+  &__control-panel
+    width: 100%
+    max-width: 1200px
+    background: $color-bg-card
+    border: 1px solid $color-border
+    border-radius: $border-radius-lg
+    padding: $spacing-xl $spacing-lg
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05)
+    backdrop-filter: blur(10px)
+    display: flex
+    flex-direction: column
+    gap: $spacing-xl
+
+    @media (max-width: $breakpoint-md)
+      padding: $spacing-lg
+      gap: $spacing-lg
+
+  // Page Title
+  &__title
+    font-size: 2.5rem
+    font-weight: 700
+    color: $color-text
+    text-align: center
+    margin: 0
+    padding-bottom: $spacing-sm
+    border-bottom: 1px solid $color-border
+
+  // PID Control Section
+  &__pid-section
+    display: flex
+    flex-direction: column
+    gap: $spacing-md
+
+  &__pid-row
+    display: flex
+    justify-content: center
+    align-items: center
+    gap: 60px
+
+  &__pid-label
+    font-size: 1.5rem
+    color: $color-text-secondary
+    font-weight: 500
+    letter-spacing: 0.5px
+    width: 120px
+
+  &__pid-input
+    width: 250px
+    height: 44px
+    background: lighten($color-bg, 5%)
+    border: 2px solid #3B82F6
+    border-radius: 6px
+    color: $color-text
+    text-align: center
+    font-size: 1.3rem
+    font-weight: 500
+    font-family: $font-mono
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.4)
+    transition: all $transition-fast ease
+    outline: none
+
+    // Webkit spinner styling
+    &::-webkit-outer-spin-button,
+    &::-webkit-inner-spin-button
+      -webkit-appearance: none
+      margin: 0
+
+    &:hover
+      box-shadow: 0 0 16px rgba(59, 130, 246, 0.6)
+
+    &:focus
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.8), inset 0 0 8px rgba(59, 130, 246, 0.2)
+
+  // Motor Speed Slider Section
+  &__motor-section
+    display: flex
+    flex-direction: column
+    gap: $spacing-md
+
+  &__motor-header
+    display: flex
+    justify-content: space-between
+    align-items: center
+
+  &__motor-label
+    font-size: 0.95rem
+    color: $color-text-secondary
+    font-weight: 500
+
+  &__motor-value
+    font-size: 1.1rem
+    font-weight: 700
+    color: $color-text
+
+  &__slider-container
+    width: 100%
+    height: 24px
+    display: flex
+    align-items: center
+
+  &__slider
+    -webkit-appearance: none
+    appearance: none
+    width: 100%
+    height: 8px
+    border-radius: 4px
+    background: linear-gradient(to right, #3B82F6 0%, #3B82F6 45%, #2A3448 45%, #2A3448 100%)
+    cursor: pointer
+    outline: none
+    transition: all $transition-fast ease
+
+    &::-webkit-slider-thumb
+      -webkit-appearance: none
+      appearance: none
+      width: 22px
+      height: 22px
+      border-radius: 50%
+      background: #3B82F6
+      cursor: pointer
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.6)
+      transition: all $transition-fast ease
+      border: 2px solid white
+
+      &:hover
+        transform: scale(1.1)
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.8)
+
+    &::-moz-range-thumb
+      width: 22px
+      height: 22px
+      border-radius: 50%
+      background: #3B82F6
+      cursor: pointer
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.6)
+      transition: all $transition-fast ease
+      border: 2px solid white
+      border: none
+
+      &:hover
+        transform: scale(1.1)
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.8)
+
+  // Slider Ticks
+  &__slider-ticks
+    display: flex
+    justify-content: space-between
+    padding: 0 4px
+
+  &__tick-container
+    display: flex
+    flex-direction: column
+    align-items: center
+    gap: 4px
+
+  &__tick
+    width: 2px
+    height: 8px
+    background: $color-text-secondary
+    opacity: 0.6
+    border-radius: 1px
+
+  &__tick-label
+    font-size: 0.75rem
+    color: $color-text-secondary
+    font-weight: 400
+
+  // Action Buttons
+  &__buttons
+    display: flex
+    justify-content: center
+    gap: 24px
+    margin-top: $spacing-sm
+
+    @media (max-width: $breakpoint-sm)
+      flex-direction: column
+      gap: $spacing-sm
+
+  &__btn
+    height: 52px
+    padding: 0 $spacing-lg
+    border: none
+    border-radius: 8px
+    font-size: 0.9rem
+    font-weight: 700
+    letter-spacing: 0.5px
+    cursor: pointer
+    transition: all $transition-fast ease
+    text-transform: uppercase
+    font-family: $font-family
+
+    &:hover
+      transform: translateY(-2px)
+
+    &:active
+      transform: translateY(0)
+
+    &--apply
+      flex: 1
+      background: $color-primary
+      color: #000
+      box-shadow: 0 0 16px rgba(46, 204, 113, 0.5)
+
+      &:hover
+        background: lighten($color-primary, 5%)
+        box-shadow: 0 0 24px rgba(46, 204, 113, 0.7)
+
+      @media (max-width: $breakpoint-sm)
+        width: 100%
+
+    &--emergency
+      flex: 1
+      background: #EF4444
+      color: white
+      box-shadow: 0 0 16px rgba(239, 68, 68, 0.5)
+
+      &:hover
+        background: #F87171
+        box-shadow: 0 0 24px rgba(239, 68, 68, 0.7)
+
+      @media (max-width: $breakpoint-sm)
+        width: 100%

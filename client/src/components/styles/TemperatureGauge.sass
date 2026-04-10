@@ -1,0 +1,108 @@
+@import "../../styles/variables"
+
+.temp-gauge
+  border-radius: $border-radius-lg
+  padding: $spacing-md
+  display: flex
+  flex-direction: column
+  align-items: center
+  gap: $spacing-sm
+  min-height: 220px
+  position: relative
+
+  @media (max-width: $breakpoint-md)
+    min-height: 180px
+    padding: $spacing-sm
+
+  &__title
+    font-size: 0.8rem
+    font-weight: 600
+    color: $color-text-secondary
+    text-transform: uppercase
+    letter-spacing: 1px
+    text-align: center
+
+    @media (max-width: $breakpoint-sm)
+      font-size: 0.72rem
+      letter-spacing: 0.5px
+
+  &__gauge-wrapper
+    width: 45%
+    display: flex
+    justify-content: center
+    flex: 1
+    position: relative
+
+    @media (max-width: $breakpoint-lg)
+      width: 55%
+
+    @media (max-width: $breakpoint-md)
+      width: 65%
+
+  &__setpoint-indicator
+    position: absolute
+    transform: translate(-50%, -50%)
+    display: flex
+    align-items: center
+    justify-content: center
+
+    &::before
+      content: ""
+      position: absolute
+      width: 10px
+      height: 10px
+      background: #FFFFFF
+      border-radius: 50%
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.8)
+
+  &__setpoint-text
+    position: absolute
+    font-size: 11px
+    font-weight: 700
+    color: #FFFFFF
+    white-space: nowrap
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.8)
+    top: 20px
+    left: 50%
+    transform: translateX(-50%)
+
+  &__footer
+    font-size: 0.85rem
+    color: $color-text-secondary
+    text-align: center
+
+    @media (max-width: $breakpoint-sm)
+      font-size: 0.75rem
+
+
+  &__setpoint-indicator
+    position: absolute
+    transform: translate(-50%, -50%)
+    display: flex
+    align-items: center
+    justify-content: center
+
+    &::before
+      content: ""
+      position: absolute
+      width: 10px
+      height: 10px
+      background: #FFFFFF
+      border-radius: 50%
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.8)
+
+  &__setpoint-text
+    position: absolute
+    font-size: 11px
+    font-weight: 700
+    color: #FFFFFF
+    white-space: nowrap
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.8)
+    top: 20px
+    left: 50%
+    transform: translateX(-50%)
+
+  &__footer
+    font-size: 0.85rem
+    color: $color-text-secondary
+    text-align: center

@@ -13,20 +13,33 @@ body
   color: $color-text
   line-height: 1.6
   min-height: 100vh
+  background: linear-gradient(135deg, $color-bg 0%, #1a1f2e 100%)
 
 #root
   min-height: 100vh
 
 a
-  color: $color-accent
+  color: $color-secondary
   text-decoration: none
 
 ::-webkit-scrollbar
-  width: 6px
+  width: 8px
 
 ::-webkit-scrollbar-track
-  background: $color-bg
+  background: $color-bg-card
 
 ::-webkit-scrollbar-thumb
-  background: $color-border
-  border-radius: 3px
+  background: $color-bg-card-hover
+  border-radius: 4px
+
+  &:hover
+    background: $color-border
+
+// Glassmorphic card base class
+.glass-card
+  background: $color-bg-card
+  border: 1px solid $color-border
+  border-radius: $border-radius
+  background: linear-gradient(163deg, $color-bg-card 0%, rgba(26, 32, 53, 0.9) 100%)
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05)
+  backdrop-filter: blur(10px)

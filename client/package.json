@@ -9,8 +9,13 @@
     "eject": "react-scripts eject"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/material": "^7.3.9",
+    "@mui/x-charts": "^8.28.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-gauge-component": "^2.0.28",
     "react-refresh": "^0.18.0",
     "react-scripts": "5.0.1"
   },

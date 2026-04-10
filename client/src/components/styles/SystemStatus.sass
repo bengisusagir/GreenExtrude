@@ -1,0 +1,124 @@
+@import "../../styles/variables"
+
+.system-status
+  border-radius: $border-radius-lg
+  padding: $spacing-md
+  display: flex
+  flex-direction: column
+  gap: $spacing-sm
+  height: 100%
+
+  &__header
+    display: flex
+    justify-content: space-between
+    align-items: center
+    margin-bottom: $spacing-xs
+
+  &__title-wrapper
+    display: flex
+    align-items: center
+    gap: $spacing-xs
+
+  &__title-bar
+    width: 3px
+    height: 16px
+    background: linear-gradient(180deg, $color-secondary, $color-primary)
+    border-radius: 2px
+    flex-shrink: 0
+
+  &__title
+    font-size: 0.85rem
+    font-weight: 600
+    color: $color-text
+    letter-spacing: 0.5px
+
+  &__icon
+    flex-shrink: 0
+    opacity: 0.7
+
+  &__col
+    display: grid
+    grid-template-columns: 1fr 1fr
+    gap: 12px
+    align-items: stretch
+
+  &__main-indicator
+    display: flex
+    flex-direction: column
+    align-items: center
+    justify-content: center
+    gap: 6px
+    background: rgba($color-border, 0.2)
+    border-radius: $border-radius
+    padding: 8px
+
+  &__circle
+    width: 24px
+    height: 24px
+    border-radius: 50%
+    background: $color-danger
+    display: flex
+    align-items: center
+    justify-content: center
+    transition: all 0.3s
+
+    svg
+      color: $color-bg
+      width: 14px
+      height: 14px
+
+    &--online
+      background: $color-success
+      box-shadow: 0 0 12px rgba($color-success, 0.4)
+
+  &__status-text
+    font-size: 0.75rem
+    font-weight: 700
+    letter-spacing: 1px
+
+  &__circle--online + &
+    color: $color-success
+
+  &__last-sync
+    font-size: 0.6rem
+    color: $color-text-secondary
+
+  &__list
+    display: flex
+    flex-direction: column
+    gap: 4px
+    border-top: 1px solid rgba($color-border, 0.6)
+    padding-top: $spacing-sm
+
+  &__item
+    display: flex
+    align-items: center
+    font-size: 0.7rem
+    gap: 4px
+
+  &__item-left
+    display: flex
+    align-items: center
+    gap: 6px
+
+  &__dot
+    width: 5px
+    height: 5px
+    border-radius: 50%
+    background: $color-danger
+    flex-shrink: 0
+
+    &--online
+      background: $color-success
+
+  &__item-label
+    color: $color-text-secondary
+    flex-shrink: 0
+
+  &__item-value
+    color: $color-danger
+    font-weight: 600
+    margin-left: auto
+
+    &--online
+      color: $color-success

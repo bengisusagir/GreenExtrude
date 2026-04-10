@@ -8,7 +8,7 @@ import {
 // ─── Configuration ───
 const BROKER_URL = "mqtt://localhost:1883";
 const DEVICE_ID = "esp32-simulator-01";
-const PUBLISH_INTERVAL_MS = 2000; // send data every 2 seconds
+const PUBLISH_INTERVAL_MS = 1000; // send data every 1 second
 
 // ─── Simulated State ───
 let state = {
