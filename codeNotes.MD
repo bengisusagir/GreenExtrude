@@ -1,6 +1,5 @@
 # TO DO List
- * Allerts comp should be edit
- * Charts sometimes shows wrong place (5 sec after reflesh its breaking down)
+ * Alerts comp should be edit
  * Data time comming from device should be check
  * EXTRUDER MOTOR RPM control should be check. Rn in settings it just for demonstrate the speed
  * TemperatureGauge should check (calculations etc)

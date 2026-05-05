@@ -1,4 +1,5 @@
 
+import { useMemo } from "react";
 import { LineChart } from "@mui/x-charts/LineChart";
 import { ChartsGrid } from "@mui/x-charts/ChartsGrid";
 import { ChartsAxisHighlight } from "@mui/x-charts/ChartsAxisHighlight";
@@ -23,6 +24,23 @@ export default function DiameterChart({
     diameter: item.diameter,
     target: target,
   }));
+
+  const yAxisRange = useMemo(() => {
+    if (data.length === 0) {
+      return { min: 1.5, max: 3.5 };
+    }
+    const diameters = data.map((d) => d.diameter).filter((v) => v > 0);
+    if (diameters.length === 0) {
+      return { min: 1.5, max: 3.5 };
+    }
+    const min = Math.min(...diameters);
+    const max = Math.max(...diameters);
+    const padding = Math.max((max - min) * 0.3, 0.2); 
+    return {
+      min: Math.floor((min - padding) * 10) / 10,
+      max: Math.ceil((max + padding) * 10) / 10,
+    };
+  }, [data]);
 
   return (
     <div className="diameter-chart glass-card">
@@ -83,9 +101,9 @@ export default function DiameterChart({
               },
             ]}
             yAxis={[
-              {
-                min: 1.5,
-                max: 3.0,
+              {                
+                min: yAxisRange.min,
+                max: yAxisRange.max,
                 label: "Diameter (mm)",
               },
             ]}
