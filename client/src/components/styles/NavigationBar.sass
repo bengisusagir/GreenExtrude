@@ -4,16 +4,16 @@
   display: flex
   align-items: center
   justify-content: space-between
-  padding: $spacing-sm $spacing-xl
+  padding: $spacing-md $spacing-xl
   background: $color-bg-card
   border-bottom: 1px solid $color-border
-  height: 60px
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2)
+  min-height: 68px
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3)
 
   &__logo
-    font-size: 1.4rem
-    font-weight: 700
-    letter-spacing: 0.5px
+    font-size: 1.7rem
+    font-weight: 800
+    letter-spacing: 0.8px
 
     &-green
       color: $color-primary
@@ -23,15 +23,15 @@
 
   &__nav
     display: flex
-    gap: $spacing-xl
+    gap: $spacing-lg
 
   &__link
     color: $color-text-secondary
     text-decoration: none
-    font-size: 0.9rem
-    font-weight: 500
+    font-size: 1rem
+    font-weight: 600
     transition: color 0.2s
-    padding: $spacing-xs 0
+    padding: 4px 0
     position: relative
 
     &--active
@@ -44,7 +44,7 @@
         left: 0
         right: 0
         height: 2px
-        background: $color-secondary
+        background: $color-primary
 
     &:hover:not(&--active)
       color: $color-text

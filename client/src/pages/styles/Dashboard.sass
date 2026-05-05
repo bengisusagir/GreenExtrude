@@ -4,7 +4,8 @@
   &__new-layout
     display: flex
     flex-direction: column
-    min-height: calc(100vh - 60px)
+    height: calc(100vh - 72px)
+    overflow: hidden
     background: $color-bg
 
   &__offline-banner
@@ -27,6 +28,7 @@
     margin: 0 auto
     width: 100%
     box-sizing: border-box
+    min-height: 0
 
     // Tablet: sağ kolon alta geçer, 2'li grid olur
     @media (max-width: $breakpoint-lg)
@@ -44,6 +46,7 @@
     flex-direction: column
     gap: $spacing-md
     min-width: 0
+    min-height: 0
 
     @media (max-width: $breakpoint-sm)
       gap: $spacing-sm
@@ -53,6 +56,7 @@
     flex-direction: column
     gap: $spacing-md
     min-width: 0
+    min-height: 0
 
     // Tablet: 3 kart yan yana
     @media (max-width: $breakpoint-lg) and (min-width: calc($breakpoint-md + 1px))
@@ -67,6 +71,7 @@
     display: grid
     grid-template-columns: 1fr 1fr
     gap: $spacing-md
+    flex-shrink: 0
 
     @media (max-width: $breakpoint-md)
       grid-template-columns: 1fr
@@ -74,20 +79,23 @@
 
   &__chart-row
     flex: 1
-    min-height: 300px
+    min-height: 0
 
   &__motor-rpm-row,
   &__system-status-row
     min-width: 0
+    flex-shrink: 0
 
   &__alerts-row
     flex: 1
     display: flex
     flex-direction: column
     min-width: 0
+    min-height: 0
 
     .alerts
       flex: 1
+      overflow: hidden
 
 @keyframes pulse
   0%, 100%
