@@ -25,16 +25,34 @@ let state = {
 function addNoise(value: number, range: number): number {
   return +(value + (Math.random() - 0.5) * range).toFixed(2);
 }
+// ─── Random anomaly injection (fake bad values) ───
+const ANOMALY_CHANCE = 0.08; // 8% chance per tick
+
+function maybeInjectAnomaly(value: number, normal: number, spikeHigh: number, spikeLow: number): number {
+  if (Math.random() < ANOMALY_CHANCE) {
+    const spike = Math.random() > 0.5 ? spikeHigh : spikeLow;
+    console.log(`[SIM] ⚠ ANOMALY injected: ${normal} → ${spike}`);
+    return spike;
+  }
+  return value;
+}
 
 function generateTelemetry(): TelemetryData {
+  const temp1 = addNoise(state.temperature_zone1, 3);
+  const temp2 = addNoise(state.temperature_zone2, 2);
+  const temp3 = addNoise(state.temperature_zone3, 2.5);
+  const motor = addNoise(state.motor_speed, 1);
+  const diameter = addNoise(state.filament_diameter, 0.08);
+  const winder = addNoise(state.winder_speed, 0.5);
+
   return {
     device_id: DEVICE_ID,
-    temperature_zone1: addNoise(state.temperature_zone1, 3),
-    temperature_zone2: addNoise(state.temperature_zone2, 2),
-    temperature_zone3: addNoise(state.temperature_zone3, 2.5),
-    motor_speed: addNoise(state.motor_speed, 1),
-    filament_diameter: addNoise(state.filament_diameter, 0.08),
-    winder_speed: addNoise(state.winder_speed, 0.5),
+    temperature_zone1: maybeInjectAnomaly(temp1, state.temperature_zone1, 245, 50),
+    temperature_zone2: maybeInjectAnomaly(temp2, state.temperature_zone2, 250, 40),
+    temperature_zone3: maybeInjectAnomaly(temp3, state.temperature_zone3, 240, 55),
+    motor_speed: maybeInjectAnomaly(motor, state.motor_speed, 80, 0),
+    filament_diameter: maybeInjectAnomaly(diameter, state.filament_diameter, 3.25, 2.50),
+    winder_speed: maybeInjectAnomaly(winder, state.winder_speed, 70, 0),
     timestamp: new Date().toISOString(),
   };
 }

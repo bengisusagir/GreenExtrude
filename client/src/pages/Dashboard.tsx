@@ -1,4 +1,5 @@
 import { useTelemetry } from "../context/TelemetryContext";
+import { useAlerts } from "../hooks/useAlerts";
 import TemperatureGauge from "../components/TemperatureGauge";
 import DiameterChart from "../components/DiameterChart";
 import MotorRPMSlider from "../components/MotorRPM";
@@ -8,7 +9,7 @@ import "./styles/Dashboard.sass";
 
 export default function Dashboard() {
   const { telemetry, isConnected, history } = useTelemetry();
-
+  const alerts = useAlerts();
   const chartData = history
     .slice(-20)
     .reverse()
@@ -68,7 +69,7 @@ export default function Dashboard() {
           </div>
 
           <div className="dashboard__alerts-row">
-            <Alerts alerts={[]} />
+            <Alerts alerts={alerts} />
           </div>
         </div>
       </div>

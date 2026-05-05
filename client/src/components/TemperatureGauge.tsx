@@ -43,14 +43,14 @@ export default function TemperatureGauge({
           labels={{
             valueLabel: {
               style: {
-                fontSize: "30px",
+                fontSize: "20px",
                 fontWeight: "700",
                 fill: "#FFFFFF",
                 textShadow: "0 0 10px rgba(255, 255, 255, 0.3)",
               },
               formatTextValue: (value) =>
                 Number.isInteger(value) ? `${value}${unit}` : `${value.toFixed(1)}${unit}`,
-              offsetY: -10,
+              offsetY: -5,
             },
           }}
           maxValue={maxTemp}
