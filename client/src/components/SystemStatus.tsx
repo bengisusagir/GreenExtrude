@@ -1,10 +1,21 @@
 import { useTelemetry } from "../context/TelemetryContext";
+import { useTelemetryHealth } from "../context/TelemetryHealthContext";
+import { useAlerts } from "../hooks/useAlerts";
 import "./styles/SystemStatus.sass";
 
 export default function SystemStatus() {
-  const { isConnected } = useTelemetry();
+  const { isConnected, deviceStatus, telemetry } = useTelemetry();
+  const deviceOnline = deviceStatus?.status === "connected";
+  const { isHealthy } = useTelemetryHealth();
+  const alerts = useAlerts();
+  const DANGER_WINDOW_MS = 2_000; // Consider "danger" alerts active if they occurred within the last 2 seconds 
+  const hasDanger = alerts.some(
+    a => a.type === "danger" && (Date.now() - a.timestamp) < DANGER_WINDOW_MS
+  );
 
-  const lastSync = new Date().toLocaleTimeString();
+  const lastSync = telemetry?.timestamp
+    ? new Date(telemetry.timestamp).toLocaleTimeString()
+    : "Never";
 
   return (
     <div className="system-status glass-card">
@@ -26,80 +37,72 @@ export default function SystemStatus() {
         </svg>
       </div>
       <div className="system-status__col">
-      <div className="system-status__main-indicator">
-        <div
-        //  className={`system-status__circle ${
-        //     isConnected && deviceOnline ? "system-status__circle--online" : ""
-        //   }`}
-          className={`system-status__circle ${
-            isConnected ? "system-status__circle--online" : ""
-          }`}
-        >
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="3"
-          >
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-        </div>
-        <div className="system-status__status-text">
-           {/* className={`system-status__circle ${
-            isConnected && deviceOnline ? "system-status__circle--online" : ""
-          }`} */}
-          {isConnected ? "ONLINE" : "OFFLINE"}
-        </div>
-        <div className="system-status__last-sync">
-          Last Sync: {lastSync}
-        </div>
-      </div>
-
-      <div className="system-status__list">
-        <div className="system-status__item">
-          <div className="system-status__item-left">
-            <span
-              className={`system-status__dot ${
-                isConnected ? "system-status__dot--online" : ""
+        <div className="system-status__main-indicator">
+          <div
+            className={`system-status__circle ${isConnected && deviceOnline ? "system-status__circle--online" : ""
               }`}
-            />
-            <span className="system-status__item-label">Network:</span>
-          </div>
-          <span
-            className={`system-status__item-value ${
-              isConnected ? "system-status__item-value--online" : ""
-            }`}
           >
-            {isConnected ? "Connected" : "Disconnected"}
-          </span>
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="3"
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </div>
+          <div className="system-status__status-text">
+            {isConnected && deviceOnline ? "ONLINE" : "OFFLINE"}
+          </div>
+          <div className="system-status__last-sync">
+            Last Sync: {lastSync}
+          </div>
         </div>
 
-        <div className="system-status__item">
-          <div className="system-status__item-left">
+        <div className="system-status__list">
+          <div className="system-status__item">
+            <div className="system-status__item-left">
+              <span
+                className={`system-status__dot ${isConnected ? "system-status__dot--online" : ""
+                  }`}
+              />
+              <span className="system-status__item-label">Network:</span>
+            </div>
             <span
-              className={`system-status__dot system-status__dot--online`}
-            />
-            <span className="system-status__item-label">Safety:</span>
+              className={`system-status__item-value ${isConnected ? "system-status__item-value--online" : ""
+                }`}
+            >
+              {isConnected ? "Connected" : "Disconnected"}
+            </span>
           </div>
-          <span className="system-status__item-value system-status__item-value--online">
-            OK
-          </span>
-        </div>
 
-        <div className="system-status__item">
-          <div className="system-status__item-left">
-            <span
-              className={`system-status__dot system-status__dot--online`}
-            />
-            <span className="system-status__item-label">Data Logging:</span>
+          <div className="system-status__item">
+            <div className="system-status__item-left">
+              <span
+                className={`system-status__dot ${hasDanger || !isHealthy ? "system-status__dot--offline" : "system-status__dot--online"}`}
+              />
+              <span className="system-status__item-label">Safety:</span>
+            </div>
+            <span className={`system-status__item-value ${hasDanger || !isHealthy ? "system-status__item-value--offline" : "system-status__item-value--online"}`}>
+              {hasDanger ? "Danger" : "OK"}
+            </span>
           </div>
-          <span className="system-status__item-value system-status__item-value--online">
-            Active
-          </span>
+
+          <div className="system-status__item">
+            <div className="system-status__item-left">
+              <span
+                className={`system-status__dot ${isHealthy ? "system-status__dot--online" : "system-status__dot--offline"}`}
+              />
+              <span className="system-status__item-label">Data Logging:</span>
+            </div>
+            <span className={`system-status__item-value ${isHealthy ? "system-status__item-value--online" : "system-status__item-value--offline"}`}>
+
+              {isHealthy ? "Active" : "Inactive"}
+            </span>
+          </div>
         </div>
-      </div>
       </div>
     </div>
   );

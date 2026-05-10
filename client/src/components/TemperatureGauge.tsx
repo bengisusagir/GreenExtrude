@@ -43,7 +43,7 @@ export default function TemperatureGauge({
           labels={{
             valueLabel: {
               style: {
-                fontSize: "20px",
+                fontSize: "32px",
                 fontWeight: "700",
                 fill: "#FFFFFF",
                 textShadow: "0 0 10px rgba(255, 255, 255, 0.3)",

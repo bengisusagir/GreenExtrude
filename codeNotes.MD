@@ -4,7 +4,7 @@
  * EXTRUDER MOTOR RPM control should be check. Rn in settings it just for demonstrate the speed
  * TemperatureGauge should check (calculations etc)
  * Sass files should clean (unused and unneccessary things)
-
+ * SystemStatus comp - define ONLINE/OFFLINE conditions (WS connected? device MQTT connected? telemetry actively flowing? safety thresholds?)
 
 
 
