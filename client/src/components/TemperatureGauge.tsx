@@ -42,15 +42,7 @@ export default function TemperatureGauge({
           }}
           labels={{
             valueLabel: {
-              style: {
-                fontSize: "32px",
-                fontWeight: "700",
-                fill: "#FFFFFF",
-                textShadow: "0 0 10px rgba(255, 255, 255, 0.3)",
-              },
-              formatTextValue: (value) =>
-                Number.isInteger(value) ? `${value}${unit}` : `${value.toFixed(1)}${unit}`,
-              offsetY: -5,
+              formatTextValue: () => "",
             },
           }}
           maxValue={maxTemp}
@@ -59,6 +51,10 @@ export default function TemperatureGauge({
           pointer={{ type: "needle", length: 0.8, width: 8 }}
           type="grafana"
         />
+        <div className="temp-gauge__value">
+          {Number.isInteger(temperature) ? temperature : temperature.toFixed(1)}
+          {unit}
+        </div>
       </div>
 
       <div className="temp-gauge__footer">

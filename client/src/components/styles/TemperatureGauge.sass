@@ -27,20 +27,34 @@
       letter-spacing: 0.5px
 
   &__gauge-wrapper
-    width: 200px
-    height: 160px
+    width: 280px
+    height: 220px
     display: flex
     justify-content: center
     flex: 1
     position: relative
 
+    svg text
+      display: none !important
+
     @media (max-width: $breakpoint-md)
-      width: 160px
-      height: 130px
+      width: 220px
+      height: 175px
 
     @media (max-width: $breakpoint-sm)
-      width: 140px
-      height: 115px
+      width: 180px
+      height: 145px
+
+  &__value
+    position: absolute
+    top: 60%
+    left: 50%
+    transform: translate(-50%, -50%)
+    font-size: 2rem
+    font-weight: 700
+    color: #FFFFFF
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.3)
+    pointer-events: none
 
   &__setpoint-indicator
     position: absolute
