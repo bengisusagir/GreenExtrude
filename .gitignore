@@ -23,6 +23,9 @@ Thumbs.db
 # SQLite database (server)
 server/greenextrude.db
 
+# Test coverage
+coverage/
+
 # VSCode settings
 .vscode/
 

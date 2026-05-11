@@ -28,8 +28,6 @@ export function initMqttBroker(wsBroadcast: BroadcastFn): Aedes {
     console.log(`[MQTT] Broker running on tcp://localhost:${MQTT_PORT}`);
   });
 
-  let lastDeviceStatus: DeviceStatusMessage | null = null;
-
   // Client connected
   aedes.on("client", (client) => {
     console.log(`[MQTT] Client connected: ${client.id}`);
@@ -38,7 +36,7 @@ export function initMqttBroker(wsBroadcast: BroadcastFn): Aedes {
       type: "device_status",
       payload: { clientId: client.id, status: "connected" },
     };
-  lastDeviceStatus = msg.payload;
+    lastDeviceStatus = msg.payload;
     wsBroadcast(JSON.stringify(msg));
   });
 

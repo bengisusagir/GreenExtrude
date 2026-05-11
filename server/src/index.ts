@@ -2,7 +2,7 @@ import http from "http";
 import url from "url";
 import { WebSocketServer, WebSocket } from "ws";
 import { initDatabase, getRecentTelemetry, closeDatabase } from "./database";
-import { initMqttBroker, sendCommand } from "./mqttHandler";
+import { initMqttBroker, sendCommand, getLastDeviceStatus } from "./mqttHandler";
 import { DeviceCommand, WsMessage, TelemetryData } from "../../shared/types";
 
 const HTTP_PORT = 3001;
@@ -25,6 +25,13 @@ wss.on("connection", (ws: WebSocket) => {
   const history = getRecentTelemetry(50);
   const msg: WsMessage<TelemetryData[]> = { type: "history", payload: history.reverse() };
   ws.send(JSON.stringify(msg));
+
+  // Send last known device status on connect
+  const lastStatus = getLastDeviceStatus();
+  if (lastStatus) {
+    const statusMsg: WsMessage<typeof lastStatus> = { type: "device_status", payload: lastStatus };
+    ws.send(JSON.stringify(statusMsg));
+  }
 
   ws.on("message", (raw: Buffer) => {
     try {
