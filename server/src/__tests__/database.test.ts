@@ -29,9 +29,9 @@ const mockedFs = vi.mocked(fs, true);
 
 const normalData: TelemetryData = {
   device_id: "esp32-001",
-  temperature_zone1: 210,
-  temperature_zone2: 210,
-  temperature_zone3: 210,
+  heater_1: 210,
+  heater_2: 210,
+  heater_3: 210,
   motor_speed: 30,
   filament_diameter: 2.85,
   winder_speed: 25,
@@ -39,9 +39,9 @@ const normalData: TelemetryData = {
 
 const warningData: TelemetryData = {
   device_id: "esp32-002",
-  temperature_zone1: 220,
-  temperature_zone2: 220,
-  temperature_zone3: 220,
+  heater_1: 220,
+  heater_2: 220,
+  heater_3: 220,
   motor_speed: 35,
   filament_diameter: 2.79,
   winder_speed: 28,
@@ -49,9 +49,9 @@ const warningData: TelemetryData = {
 
 const dangerData: TelemetryData = {
   device_id: "esp32-003",
-  temperature_zone1: 235,
-  temperature_zone2: 235,
-  temperature_zone3: 235,
+  heater_1: 235,
+  heater_2: 235,
+  heater_3: 235,
   motor_speed: 40,
   filament_diameter: 2.65,
   winder_speed: 30,
@@ -59,9 +59,9 @@ const dangerData: TelemetryData = {
 
 const edgeData: TelemetryData = {
   device_id: "esp32-000",
-  temperature_zone1: 0,
-  temperature_zone2: 0,
-  temperature_zone3: 0,
+  heater_1: 0,
+  heater_2: 0,
+  heater_3: 0,
   motor_speed: 0,
   filament_diameter: 0,
   winder_speed: 0,
@@ -110,9 +110,9 @@ describe("initDatabase()", () => {
     const columnNames = columns.map((c) => c.name);
     expect(columnNames).toContain("id");
     expect(columnNames).toContain("timestamp");
-    expect(columnNames).toContain("temperature_zone1");
-    expect(columnNames).toContain("temperature_zone2");
-    expect(columnNames).toContain("temperature_zone3");
+    expect(columnNames).toContain("heater_1");
+    expect(columnNames).toContain("heater_2");
+    expect(columnNames).toContain("heater_3");
     expect(columnNames).toContain("motor_speed");
     expect(columnNames).toContain("filament_diameter");
     expect(columnNames).toContain("winder_speed");
@@ -126,8 +126,8 @@ describe("initDatabase()", () => {
     expect(tsCol.type).toBe("TEXT");
     expect(tsCol.notnull).toBe(1);
 
-    const tz1Col = columns.find((c) => c.name === "temperature_zone1")!;
-    expect(tz1Col.type).toBe("REAL");
+    const h1Col = columns.find((c) => c.name === "heater_1")!;
+    expect(h1Col.type).toBe("REAL");
 
     const didCol = columns.find((c) => c.name === "device_id")!;
     expect(didCol.type).toBe("TEXT");
@@ -194,9 +194,9 @@ describe("insertTelemetry()", () => {
     stmt.free();
 
     expect(row.device_id).toBe("esp32-001");
-    expect(row.temperature_zone1).toBe(210);
-    expect(row.temperature_zone2).toBe(210);
-    expect(row.temperature_zone3).toBe(210);
+    expect(row.heater_1).toBe(210);
+    expect(row.heater_2).toBe(210);
+    expect(row.heater_3).toBe(210);
     expect(row.motor_speed).toBe(30);
     expect(row.filament_diameter).toBe(2.85);
     expect(row.winder_speed).toBe(25);
@@ -222,9 +222,9 @@ describe("insertTelemetry()", () => {
 
     const partialData: TelemetryData = {
       device_id: "esp32-partial",
-      temperature_zone1: undefined as any,
-      temperature_zone2: undefined as any,
-      temperature_zone3: undefined as any,
+      heater_1: undefined as any,
+      heater_2: undefined as any,
+      heater_3: undefined as any,
       motor_speed: undefined as any,
       filament_diameter: undefined as any,
       winder_speed: undefined as any,
@@ -237,9 +237,9 @@ describe("insertTelemetry()", () => {
     const row = stmt.getAsObject() as any;
     stmt.free();
 
-    expect(row.temperature_zone1).toBeNull();
-    expect(row.temperature_zone2).toBeNull();
-    expect(row.temperature_zone3).toBeNull();
+    expect(row.heater_1).toBeNull();
+    expect(row.heater_2).toBeNull();
+    expect(row.heater_3).toBeNull();
     expect(row.motor_speed).toBeNull();
     expect(row.filament_diameter).toBeNull();
     expect(row.winder_speed).toBeNull();
@@ -264,9 +264,9 @@ describe("insertTelemetry()", () => {
 
     const preciseData: TelemetryData = {
       device_id: "esp32-precise",
-      temperature_zone1: 210.123,
-      temperature_zone2: 215.456,
-      temperature_zone3: 220.789,
+      heater_1: 210.123,
+      heater_2: 215.456,
+      heater_3: 220.789,
       motor_speed: 30.001,
       filament_diameter: 2.847,
       winder_speed: 25.999,
@@ -279,9 +279,9 @@ describe("insertTelemetry()", () => {
     const row = stmt.getAsObject() as any;
     stmt.free();
 
-    expect(row.temperature_zone1).toBeCloseTo(210.123, 3);
-    expect(row.temperature_zone2).toBeCloseTo(215.456, 3);
-    expect(row.temperature_zone3).toBeCloseTo(220.789, 3);
+    expect(row.heater_1).toBeCloseTo(210.123, 3);
+    expect(row.heater_2).toBeCloseTo(215.456, 3);
+    expect(row.heater_3).toBeCloseTo(220.789, 3);
     expect(row.motor_speed).toBeCloseTo(30.001, 3);
     expect(row.filament_diameter).toBeCloseTo(2.847, 3);
     expect(row.winder_speed).toBeCloseTo(25.999, 3);
@@ -293,9 +293,9 @@ describe("insertTelemetry()", () => {
 
     const noDeviceData: TelemetryData = {
       device_id: undefined as any,
-      temperature_zone1: 210,
-      temperature_zone2: 210,
-      temperature_zone3: 210,
+      heater_1: 210,
+      heater_2: 210,
+      heater_3: 210,
       motor_speed: 30,
       filament_diameter: 2.85,
       winder_speed: 25,
@@ -377,18 +377,18 @@ describe("getRecentTelemetry()", () => {
     const record = results[0];
 
     expect(record).toHaveProperty("device_id");
-    expect(record).toHaveProperty("temperature_zone1");
-    expect(record).toHaveProperty("temperature_zone2");
-    expect(record).toHaveProperty("temperature_zone3");
+    expect(record).toHaveProperty("heater_1");
+    expect(record).toHaveProperty("heater_2");
+    expect(record).toHaveProperty("heater_3");
     expect(record).toHaveProperty("motor_speed");
     expect(record).toHaveProperty("filament_diameter");
     expect(record).toHaveProperty("winder_speed");
     expect(record).toHaveProperty("timestamp");
 
     expect(record.device_id).toBe("esp32-001");
-    expect(record.temperature_zone1).toBe(210);
-    expect(record.temperature_zone2).toBe(210);
-    expect(record.temperature_zone3).toBe(210);
+    expect(record.heater_1).toBe(210);
+    expect(record.heater_2).toBe(210);
+    expect(record.heater_3).toBe(210);
     expect(record.motor_speed).toBe(30);
     expect(record.filament_diameter).toBe(2.85);
     expect(record.winder_speed).toBe(25);
@@ -430,9 +430,9 @@ describe("Edge Cases & Data Integrity", () => {
 
     const extremeData: TelemetryData = {
       device_id: "esp32-extreme",
-      temperature_zone1: 999,
-      temperature_zone2: 999,
-      temperature_zone3: 999,
+      heater_1: 999,
+      heater_2: 999,
+      heater_3: 999,
       motor_speed: 999,
       filament_diameter: 0.01,
       winder_speed: 999,
@@ -441,7 +441,7 @@ describe("Edge Cases & Data Integrity", () => {
     expect(() => insertTelemetry(extremeData)).not.toThrow();
 
     const results = getRecentTelemetry(1);
-    expect(results[0].temperature_zone1).toBe(999);
+    expect(results[0].heater_1).toBe(999);
     expect(results[0].filament_diameter).toBeCloseTo(0.01);
   });
 
@@ -451,9 +451,9 @@ describe("Edge Cases & Data Integrity", () => {
 
     const negativeData: TelemetryData = {
       device_id: "esp32-negative",
-      temperature_zone1: -40,
-      temperature_zone2: -40,
-      temperature_zone3: -40,
+      heater_1: -40,
+      heater_2: -40,
+      heater_3: -40,
       motor_speed: -10,
       filament_diameter: -1.5,
       winder_speed: -5,
@@ -462,7 +462,7 @@ describe("Edge Cases & Data Integrity", () => {
     expect(() => insertTelemetry(negativeData)).not.toThrow();
 
     const results = getRecentTelemetry(1);
-    expect(results[0].temperature_zone1).toBe(-40);
+    expect(results[0].heater_1).toBe(-40);
     expect(results[0].motor_speed).toBe(-10);
     expect(results[0].filament_diameter).toBe(-1.5);
   });
@@ -475,7 +475,7 @@ describe("Edge Cases & Data Integrity", () => {
       insertTelemetry({
         ...normalData,
         device_id: `esp32-bulk-${i}`,
-        temperature_zone1: 200 + i * 0.1,
+        heater_1: 200 + i * 0.1,
       });
     }
 
@@ -510,9 +510,9 @@ describe("Edge Cases & Data Integrity", () => {
     const record = results[0];
 
     expect(typeof record.device_id).toBe("string");
-    expect(typeof record.temperature_zone1).toBe("number");
-    expect(typeof record.temperature_zone2).toBe("number");
-    expect(typeof record.temperature_zone3).toBe("number");
+    expect(typeof record.heater_1).toBe("number");
+    expect(typeof record.heater_2).toBe("number");
+    expect(typeof record.heater_3).toBe("number");
     expect(typeof record.motor_speed).toBe("number");
     expect(typeof record.filament_diameter).toBe("number");
     expect(typeof record.winder_speed).toBe("number");
@@ -528,9 +528,9 @@ describe("Edge Cases & Data Integrity", () => {
     const results = getRecentTelemetry(1);
     const record = results[0];
 
-    expect(record.temperature_zone1).toBe(0);
-    expect(record.temperature_zone2).toBe(0);
-    expect(record.temperature_zone3).toBe(0);
+    expect(record.heater_1).toBe(0);
+    expect(record.heater_2).toBe(0);
+    expect(record.heater_3).toBe(0);
     expect(record.motor_speed).toBe(0);
     expect(record.filament_diameter).toBe(0);
     expect(record.winder_speed).toBe(0);
@@ -564,7 +564,7 @@ describe("Edge Cases & Data Integrity", () => {
     const results = getRecentTelemetry(1);
     const record = results[0];
 
-    expect(record.temperature_zone1).toBe(220);
+    expect(record.heater_1).toBe(220);
     expect(record.filament_diameter).toBeCloseTo(2.79);
   });
 
@@ -577,7 +577,7 @@ describe("Edge Cases & Data Integrity", () => {
     const results = getRecentTelemetry(1);
     const record = results[0];
 
-    expect(record.temperature_zone1).toBe(235);
+    expect(record.heater_1).toBe(235);
     expect(record.filament_diameter).toBeCloseTo(2.65);
   });
 });
@@ -632,9 +632,9 @@ describe("Integration: initDatabase → insertTelemetry → getRecentTelemetry",
     expect(results[1].device_id).toBe("esp32-002");
     expect(results[2].device_id).toBe("esp32-001");
 
-    expect(results[2].temperature_zone1).toBe(210);
-    expect(results[1].temperature_zone1).toBe(220);
-    expect(results[0].temperature_zone1).toBe(235);
+    expect(results[2].heater_1).toBe(210);
+    expect(results[1].heater_1).toBe(220);
+    expect(results[0].heater_1).toBe(235);
   });
 
   it("writeFileSync is called once per insert plus once on close", async () => {

@@ -42,7 +42,7 @@ export function useAlerts(): AlertItem[] {
     const { WARNING: TEMP_WARN, DANGER: TEMP_DANGER } = SENSOR_THRESHOLDS.TEMPERATURE;
 
     for (const zone of [1, 2, 3]) {
-      const temp = telemetry[`temperature_zone${zone}` as keyof typeof telemetry] as number;
+      const temp = telemetry[`heater_${zone}` as keyof typeof telemetry] as number;
       if (!temp || typeof temp !== "number") continue;
 
       if (temp >= TEMP_DANGER) {

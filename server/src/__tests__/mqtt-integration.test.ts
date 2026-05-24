@@ -49,9 +49,9 @@ const mockedFs = vi.mocked(fs, true);
 
 const normalTelemetry: TelemetryData = {
   device_id: "esp32-001",
-  temperature_zone1: 210,
-  temperature_zone2: 210,
-  temperature_zone3: 210,
+  heater_1: 210,
+  heater_2: 210,
+  heater_3: 210,
   motor_speed: 30,
   filament_diameter: 2.85,
   winder_speed: 25,
@@ -59,9 +59,9 @@ const normalTelemetry: TelemetryData = {
 
 const warningTelemetry: TelemetryData = {
   device_id: "esp32-001",
-  temperature_zone1: 220,
-  temperature_zone2: 220,
-  temperature_zone3: 220,
+  heater_1: 220,
+  heater_2: 220,
+  heater_3: 220,
   motor_speed: 35,
   filament_diameter: 2.79,
   winder_speed: 28,
@@ -69,9 +69,9 @@ const warningTelemetry: TelemetryData = {
 
 const dangerTelemetry: TelemetryData = {
   device_id: "esp32-001",
-  temperature_zone1: 235,
-  temperature_zone2: 235,
-  temperature_zone3: 235,
+  heater_1: 235,
+  heater_2: 235,
+  heater_3: 235,
   motor_speed: 40,
   filament_diameter: 2.65,
   winder_speed: 30,
@@ -169,9 +169,9 @@ describe("Suite A: MQTT Telemetry → Database Pipeline", () => {
 
     const row = results[0];
     expect(row.device_id).toBe("esp32-001");
-    expect(row.temperature_zone1).toBe(210);
-    expect(row.temperature_zone2).toBe(210);
-    expect(row.temperature_zone3).toBe(210);
+    expect(row.heater_1).toBe(210);
+    expect(row.heater_2).toBe(210);
+    expect(row.heater_3).toBe(210);
     expect(row.motor_speed).toBe(30);
     expect(row.filament_diameter).toBeCloseTo(2.85);
     expect(row.winder_speed).toBe(25);
@@ -212,9 +212,9 @@ describe("Suite A: MQTT Telemetry → Database Pipeline", () => {
 
     const precise: TelemetryData = {
       device_id: "esp32-precise",
-      temperature_zone1: 210.123,
-      temperature_zone2: 215.456,
-      temperature_zone3: 220.789,
+      heater_1: 210.123,
+      heater_2: 215.456,
+      heater_3: 220.789,
       motor_speed: 30.001,
       filament_diameter: 2.847,
       winder_speed: 25.999,
@@ -225,9 +225,9 @@ describe("Suite A: MQTT Telemetry → Database Pipeline", () => {
     const results = database.getRecentTelemetry(1);
     const row = results[0];
 
-    expect(row.temperature_zone1).toBeCloseTo(210.123, 3);
-    expect(row.temperature_zone2).toBeCloseTo(215.456, 3);
-    expect(row.temperature_zone3).toBeCloseTo(220.789, 3);
+    expect(row.heater_1).toBeCloseTo(210.123, 3);
+    expect(row.heater_2).toBeCloseTo(215.456, 3);
+    expect(row.heater_3).toBeCloseTo(220.789, 3);
     expect(row.motor_speed).toBeCloseTo(30.001, 3);
     expect(row.filament_diameter).toBeCloseTo(2.847, 3);
     expect(row.winder_speed).toBeCloseTo(25.999, 3);
@@ -243,9 +243,9 @@ describe("Suite A: MQTT Telemetry → Database Pipeline", () => {
 
     const partial: TelemetryData = {
       device_id: "esp32-partial",
-      temperature_zone1: undefined as any,
-      temperature_zone2: undefined as any,
-      temperature_zone3: undefined as any,
+      heater_1: undefined as any,
+      heater_2: undefined as any,
+      heater_3: undefined as any,
       motor_speed: undefined as any,
       filament_diameter: undefined as any,
       winder_speed: undefined as any,
@@ -258,9 +258,9 @@ describe("Suite A: MQTT Telemetry → Database Pipeline", () => {
 
     const row = results[0];
     expect(row.device_id).toBe("esp32-partial");
-    expect(row.temperature_zone1).toBeNull();
-    expect(row.temperature_zone2).toBeNull();
-    expect(row.temperature_zone3).toBeNull();
+    expect(row.heater_1).toBeNull();
+    expect(row.heater_2).toBeNull();
+    expect(row.heater_3).toBeNull();
     expect(row.motor_speed).toBeNull();
     expect(row.filament_diameter).toBeNull();
     expect(row.winder_speed).toBeNull();
@@ -282,9 +282,9 @@ describe("Suite A: MQTT Telemetry → Database Pipeline", () => {
     const parsed: WsMessage<TelemetryData> = JSON.parse(broadcasts[0]);
     expect(parsed.type).toBe("telemetry");
     expect(parsed.payload.device_id).toBe("esp32-001");
-    expect(parsed.payload.temperature_zone1).toBe(210);
-    expect(parsed.payload.temperature_zone2).toBe(210);
-    expect(parsed.payload.temperature_zone3).toBe(210);
+    expect(parsed.payload.heater_1).toBe(210);
+    expect(parsed.payload.heater_2).toBe(210);
+    expect(parsed.payload.heater_3).toBe(210);
     expect(parsed.payload.motor_speed).toBe(30);
     expect(parsed.payload.filament_diameter).toBeCloseTo(2.85);
     expect(parsed.payload.winder_speed).toBe(25);
@@ -327,9 +327,9 @@ describe("Suite B: MQTT JSON Parsing & Error Handling", () => {
 
     const badTypes = {
       device_id: "esp32-badtypes",
-      temperature_zone1: "hot",
-      temperature_zone2: "hot",
-      temperature_zone3: "hot",
+      heater_1: "hot",
+      heater_2: "hot",
+      heater_3: "hot",
       motor_speed: "fast",
       filament_diameter: "thick",
       winder_speed: "fast",
@@ -416,9 +416,9 @@ describe("Suite B: MQTT JSON Parsing & Error Handling", () => {
 
     const partial: TelemetryData = {
       device_id: "esp32-twozones",
-      temperature_zone1: 210,
-      temperature_zone2: 215,
-      temperature_zone3: undefined as any,
+      heater_1: 210,
+      heater_2: 215,
+      heater_3: undefined as any,
       motor_speed: 30,
       filament_diameter: 2.85,
       winder_speed: 25,
@@ -428,9 +428,9 @@ describe("Suite B: MQTT JSON Parsing & Error Handling", () => {
 
     const results = database.getRecentTelemetry(1);
     expect(results).toHaveLength(1);
-    expect(results[0].temperature_zone1).toBe(210);
-    expect(results[0].temperature_zone2).toBe(215);
-    expect(results[0].temperature_zone3).toBeNull();
+    expect(results[0].heater_1).toBe(210);
+    expect(results[0].heater_2).toBe(215);
+    expect(results[0].heater_3).toBeNull();
 
     database.closeDatabase();
   });
@@ -662,7 +662,7 @@ describe("Suite E: Full End-to-End Integration Scenario", () => {
       { ...normalTelemetry, device_id: "esp32-001" },
       { ...normalTelemetry, device_id: "esp32-001", motor_speed: 31 },
       { ...warningTelemetry, device_id: "esp32-001" },
-      { ...warningTelemetry, device_id: "esp32-001", temperature_zone1: 225 },
+      { ...warningTelemetry, device_id: "esp32-001", heater_1: 225 },
       { ...dangerTelemetry, device_id: "esp32-001" },
     ];
 
@@ -673,8 +673,8 @@ describe("Suite E: Full End-to-End Integration Scenario", () => {
     // Step 3: Verify all 5 stored in DB in correct order (DESC by id)
     const results = database.getRecentTelemetry(10);
     expect(results).toHaveLength(5);
-    expect(results[0].temperature_zone1).toBe(235);
-    expect(results[4].temperature_zone1).toBe(210);
+    expect(results[0].heater_1).toBe(235);
+    expect(results[4].heater_1).toBe(210);
 
     // Step 4: Verify WebSocket broadcasts received for each telemetry packet
     expect(broadcasts).toHaveLength(5);
@@ -698,9 +698,9 @@ describe("Suite E: Full End-to-End Integration Scenario", () => {
     // Step 7: Query DB and verify data integrity — all values match originals
     const finalResults = database.getRecentTelemetry(5);
     expect(finalResults[0].device_id).toBe("esp32-001");
-    expect(finalResults[0].temperature_zone1).toBe(235);
+    expect(finalResults[0].heater_1).toBe(235);
     expect(finalResults[0].filament_diameter).toBeCloseTo(2.65);
-    expect(finalResults[4].temperature_zone1).toBe(210);
+    expect(finalResults[4].heater_1).toBe(210);
     expect(finalResults[4].filament_diameter).toBeCloseTo(2.85);
 
     // Step 8: Close database cleanly
@@ -719,9 +719,9 @@ describe("Suite E: Full End-to-End Integration Scenario", () => {
     for (let i = 0; i < COUNT; i++) {
       const packet: TelemetryData = {
         device_id: `esp32-bulk-${i}`,
-        temperature_zone1: 200 + i * 0.1,
-        temperature_zone2: 200 + i * 0.2,
-        temperature_zone3: 200 + i * 0.3,
+        heater_1: 200 + i * 0.1,
+        heater_2: 200 + i * 0.2,
+        heater_3: 200 + i * 0.3,
         motor_speed: 30 + i,
         filament_diameter: 2.85 - i * 0.001,
         winder_speed: 25 + i,
@@ -740,9 +740,9 @@ describe("Suite E: Full End-to-End Integration Scenario", () => {
     expect(broadcasts).toHaveLength(COUNT);
 
     // Spot-check data integrity on first, middle, and last
-    expect(results[0].temperature_zone1).toBeCloseTo(200 + 49 * 0.1, 1);
+    expect(results[0].heater_1).toBeCloseTo(200 + 49 * 0.1, 1);
     expect(results[24].device_id).toBe("esp32-bulk-25");
-    expect(results[COUNT - 1].temperature_zone1).toBeCloseTo(200, 1);
+    expect(results[COUNT - 1].heater_1).toBeCloseTo(200, 1);
 
     database.closeDatabase();
   });

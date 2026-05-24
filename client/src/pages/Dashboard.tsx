@@ -39,14 +39,19 @@ export default function Dashboard() {
         <div className="dashboard__left-column">
           <div className="dashboard__gauges-row">
             <TemperatureGauge
-              title="HEATING ZONE 1"
-              temperature={telemetry?.temperature_zone1 ?? 0}
+              title="HEATER 1"
+              temperature={telemetry?.heater_1 ?? 0}
               setPoint={220}
             />
             <TemperatureGauge
-              title="HEATING ZONE 2"
-              temperature={telemetry?.temperature_zone2 ?? 0}
+              title="HEATER 2"
+              temperature={telemetry?.heater_2 ?? 0}
               setPoint={215}
+            />
+            <TemperatureGauge
+              title="HEATER 3"
+              temperature={telemetry?.heater_3 ?? 0}
+              setPoint={210}
             />
           </div>
 

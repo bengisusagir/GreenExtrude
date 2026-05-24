@@ -22,9 +22,9 @@ export async function initDatabase(): Promise<SqlJsDatabase> {
     CREATE TABLE IF NOT EXISTS telemetry (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       timestamp TEXT NOT NULL DEFAULT (datetime('now')),
-      temperature_zone1 REAL,
-      temperature_zone2 REAL,
-      temperature_zone3 REAL,
+      heater_1 REAL,
+      heater_2 REAL,
+      heater_3 REAL,
       motor_speed REAL,
       filament_diameter REAL,
       winder_speed REAL,
@@ -45,12 +45,12 @@ function saveToFile(): void {
 export function insertTelemetry(data: TelemetryData): void {
   db.run(
     `INSERT INTO telemetry 
-      (temperature_zone1, temperature_zone2, temperature_zone3, motor_speed, filament_diameter, winder_speed, device_id)
+      (heater_1, heater_2, heater_3, motor_speed, filament_diameter, winder_speed, device_id)
     VALUES (?, ?, ?, ?, ?, ?, ?)`,
     [
-      data.temperature_zone1 ?? null,
-      data.temperature_zone2 ?? null,
-      data.temperature_zone3 ?? null,
+      data.heater_1 ?? null,
+      data.heater_2 ?? null,
+      data.heater_3 ?? null,
       data.motor_speed ?? null,
       data.filament_diameter ?? null,
       data.winder_speed ?? null,
@@ -71,9 +71,9 @@ export function getRecentTelemetry(limit: number = 100): TelemetryData[] {
     const row = stmt.getAsObject();
     results.push({
       device_id: row.device_id as string,
-      temperature_zone1: row.temperature_zone1 as number,
-      temperature_zone2: row.temperature_zone2 as number,
-      temperature_zone3: row.temperature_zone3 as number,
+      heater_1: row.heater_1 as number,
+      heater_2: row.heater_2 as number,
+      heater_3: row.heater_3 as number,
       motor_speed: row.motor_speed as number,
       filament_diameter: row.filament_diameter as number,
       winder_speed: row.winder_speed as number,

@@ -1,9 +1,9 @@
 // ─── Telemetry: Device → Server ───
 export interface TelemetryData {
   device_id: string;
-  temperature_zone1: number;
-  temperature_zone2: number;
-  temperature_zone3: number;
+  heater_1: number;
+  heater_2: number;
+  heater_3: number;
   motor_speed: number;
   filament_diameter: number;
   winder_speed: number;
