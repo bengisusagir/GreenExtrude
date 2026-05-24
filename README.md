@@ -65,54 +65,68 @@ GreenExtrude/
 ├── run.bat                     ← Windows one-click launcher
 ├── run.sh                      ← Linux / macOS one-click launcher
 │
+├── greenextrude/               ← root monorepo placeholder (no deps/scripts)
+│   └── package.json
+│
 ├── shared/                     ← Shared TypeScript type definitions
 │   ├── package.json
-│   └── types.ts                ← TelemetryData, DeviceCommand, WsMessage, MQTT_TOPICS …
+│   └── types.ts                ← TelemetryData, DeviceCommand, WsMessage, MQTT_TOPICS, SENSOR_THRESHOLDS
 │
 ├── server/                     ← Node.js backend
 │   ├── package.json
 │   ├── tsconfig.json
+│   ├── vitest.config.ts
 │   └── src/
 │       ├── index.ts            ← Entry: HTTP + WebSocket servers, app bootstrap
 │       ├── mqttHandler.ts      ← Aedes broker init, publish/subscribe logic
-│       └── database.ts         ← sql.js SQLite: init, insert, query telemetry
+│       ├── database.ts         ← sql.js SQLite: init, insert, query telemetry
+│       └── __tests__/
+│           ├── database.test.ts         ← 21 unit tests for database module
+│           └── mqtt-integration.test.ts  ← ~25 integration tests for MQTT pipeline
 │
 ├── simulator/                  ← Mock ESP32 device
 │   ├── package.json
 │   ├── tsconfig.json
 │   └── src/
-│       └── index.ts            ← Connects via MQTT, publishes fake sensor data every 1 s
+│       └── index.ts            ← Connects via MQTT, publishes sensor data every 1 s with anomaly injection
 │
 └── client/                     ← React dashboard
     ├── package.json
     ├── tsconfig.json
+    ├── index.html              ← Vite-style entry (legacy)
     ├── public/
-    │   └── index.html
+    │   └── index.html          ← CRA entry point
     └── src/
         ├── index.tsx           ← React root mount
         ├── App.tsx             ← Root component: routing + providers
         ├── App.sass
         ├── react-app-env.d.ts
+        ├── shared/
+        │   └── types.ts       ← local copy of shared/types.ts
         │
         ├── context/
         │   ├── TelemetryContext.tsx     ← React Context: distributes live data to all components
-        │   └── TelemetryHealthContext.tsx ← Health monitoring for telemetry data stream
+        │   └── TelemetryHealthContext.tsx ← Health monitoring for telemetry data stream (2 s timeout)
         │
         ├── hooks/
-        │   └── useWebSocket.ts ← Manages WS connection, reconnect, message parsing
+        │   ├── useWebSocket.ts ← Manages WS connection, reconnect, message parsing
+        │   └── useAlerts.ts    ← Generates alerts with 15 s cooldown, 50 max alerts
         │
         ├── pages/
         │   ├── Dashboard.tsx   ← Main page: gauges, chart, status, alerts
-        │   └── Settings.tsx    ← Settings: PID controls, motor slider, buttons
+        │   ├── Settings.tsx    ← Settings: PID controls, motor slider, buttons
+        │   └── styles/
+        │       ├── Dashboard.sass
+        │       └── Settings.sass
         │
         ├── components/
-        │   ├── NavigationBar.tsx   ← Top navigation, connection status
-        │   ├── TemperatureGauge.tsx ← Visual temperature gauge
-        │   ├── DiameterChart.tsx   ← Filament diameter chart
-        │   ├── MotorRPM.tsx        ← Motor speed gauge/display
-        │   ├── SystemStatus.tsx    ← Device status panel
-        │   └── Alerts.tsx          ← Alerts panel
-        │   └── styles/             ← Component-specific styles
+        │   ├── NavigationBar.tsx   ← Top navigation, LIVE/OFFLINE health indicator
+        │   ├── TemperatureGauge.tsx ← Grafana-style semicircular gauge (react-gauge-component)
+        │   ├── DiameterChart.tsx   ← MUI LineChart with pause/resume, stats, warning ref lines
+        │   ├── MotorRPM.tsx        ← Motor speed display
+        │   ├── SystemStatus.tsx    ← Device info: network, safety, data logging status
+        │   ├── Alerts.tsx          ← Color-coded alert panel (WARN/CRIT/INFO) with animations
+        │   └── styles/
         │       ├── NavigationBar.sass
         │       ├── TemperatureGauge.sass
         │       ├── DiameterChart.sass
@@ -120,16 +134,9 @@ GreenExtrude/
         │       ├── SystemStatus.sass
         │       └── Alerts.sass
         │
-        ├── pages/
-        │   ├── Dashboard.tsx       ← Main dashboard page
-        │   ├── Settings.tsx        ← Settings page
-        │   └── styles/             ← Page-specific styles
-        │       ├── Dashboard.sass
-        │       └── Settings.sass
-        │
         └── styles/
             ├── _variables.sass ← Design tokens (colours, fonts, spacing)
-            └── global.sass     ← Global resets and base styles
+            └── global.sass     ← Global resets, glassmorphism card base
 ```
 
 ---
@@ -190,7 +197,7 @@ ws.on("connection")
 |---|---|
 | `types.ts` | All shared TypeScript interfaces used by every sub-project |
 
-### `server/`
+### Server
 
 | Dependency | Role |
 |---|---|
@@ -198,6 +205,8 @@ ws.on("connection")
 | `ws` | WebSocket server for the React client |
 | `sql.js` | SQLite compiled to WebAssembly — runs in Node with no native binaries |
 | `tsx` | Dev-only: runs TypeScript directly without a compile step |
+| `vitest` | Test framework with V8 coverage |
+| `@vitest/coverage-v8` | Coverage reporting |
 
 ### `simulator/`
 
@@ -205,15 +214,18 @@ ws.on("connection")
 |---|---|
 | `mqtt` | MQTT client library — same API an ESP32 firmware would use |
 
-### `client/`
+### Client
 
 | Dependency | Role |
 |---|---|
 | `react` / `react-dom` 18 | UI framework |
 | `react-scripts` (CRA) | Webpack + Babel build toolchain, dev server |
+| `@mui/material` | Material UI component library (Slider in Settings, Charts) |
+| `@emotion/react` / `@emotion/styled` | CSS-in-JS engine for MUI |
+| `@mui/x-charts` | MUI charting library (DiameterChart) |
 | `sass` | SASS/SCSS stylesheet compilation |
 | `typescript` | Static typing |
-| `react-gauge-component` | Temperature gauge visualization |
+| `react-gauge-component` | Grafana-style gauge visualization (TemperatureGauge) |
 
 ---
 
@@ -224,12 +236,16 @@ All defined in `shared/types.ts` and imported by all three runtimes:
 ```typescript
 TelemetryData          // sensor snapshot: 3 temperatures, motor/winder RPM, filament ⌀
 DeviceCommand          // command to device: type + optional zone/value
+CommandType            // "SET_TEMPERATURE" | "SET_MOTOR_SPEED" | "SET_WINDER_SPEED" | "EMERGENCY_STOP" | "START" | "STOP"
 DeviceStatus           // "connected" | "disconnected" | "error"
 DeviceStatusMessage    // clientId + status + optional message string
 WsMessage<T>           // WebSocket envelope: { type: WsMessageType, payload: T }
 WsMessageType          // "telemetry" | "device_status" | "history" | "command_ack"
 MQTT_TOPICS            // const: TELEMETRY | COMMAND | STATUS topic strings
+SENSOR_THRESHOLDS      // const: TEMPERATURE { WARNING, DANGER }, FILAMENT_DIAMETER { TARGET, WARNING/MIN/MAX, DANGER_MIN/MAX }
 ```
+
+> **Note:** `command_ack` is defined in `WsMessageType` but is not currently sent by the server — it is a forward-looking type for future command acknowledgement.
 
 ---
 
@@ -240,9 +256,9 @@ MQTT_TOPICS            // const: TELEMETRY | COMMAND | STATUS topic strings
 ### Startup sequence
 
 1. **`initDatabase()`** — loads `greenextrude.db` from disk (or creates it), ensures the `telemetry` table exists.
-2. **`WebSocketServer`** on `:3002` — accepts browser connections; sends the last 50 rows on connect; forwards incoming `command` messages to MQTT.
-3. **`initMqttBroker(wsBroadcast)`** — starts Aedes on `:1883`; on every telemetry message: persist to DB + broadcast to all WS clients.
-4. **`http.createServer`** on `:3001` — serves the REST endpoints.
+2. **`WebSocketServer`** on `:3002` — accepts browser connections; sends the last 50 rows on connect; sends last known device status on connect; forwards incoming `command` messages to MQTT.
+3. **`initMqttBroker(wsBroadcast)`** — starts Aedes on `:1883`; on every telemetry message: persist to DB + broadcast to all WS clients; on client connect/disconnect: broadcast device status.
+4. **`http.createServer`** on `:3001` — serves the REST endpoints with CORS headers (`Access-Control-Allow-Origin: *`).
 
 ### HTTP endpoints
 
@@ -258,7 +274,18 @@ MQTT_TOPICS            // const: TELEMETRY | COMMAND | STATUS topic strings
 npm run dev          # tsx watch — runs TypeScript directly, hot-reloads on save
 npm run build        # tsc — compiles to dist/
 npm start            # node dist/server/src/index.js — runs compiled output
+npm test             # vitest run — executes test suite with coverage
+npm run test:watch   # vitest watch — runs tests on file changes
 ```
+
+### Test suite
+
+The server includes **46 tests** across two files:
+
+| Test File | Tests | Coverage |
+|---|---|---|
+| `__tests__/database.test.ts` | 21 | DB init, inserts, queries, edge cases, persistence |
+| `__tests__/mqtt-integration.test.ts` | ~25 | Telemetry pipeline, JSON parsing, client lifecycle, command relay, E2E |
 
 ---
 
@@ -271,6 +298,8 @@ Mimics an ESP32 running MicroPython/Arduino firmware:
 - Connects to `mqtt://localhost:1883` with client ID `esp32-simulator-01`.
 - Publishes `TelemetryData` JSON to `greenextrude/telemetry` **every 1 second**.
 - Adds realistic random noise to each sensor value.
+- **Anomaly injection:** 8% chance per tick of injecting an extreme spike (high or low) for any sensor — useful for testing alert thresholds.
+- Publishes `{ status: "online", device_id }` to `greenextrude/status` on connect.
 - Subscribes to `greenextrude/command` and executes all command types:
 
 | Command | Effect in simulator |
@@ -293,6 +322,17 @@ Mimics an ESP32 running MicroPython/Arduino firmware:
 | Filament Diameter | 2.85 mm | 0.04 |
 | Winder Speed | 25 RPM | 0.25 |
 
+### Anomaly spike values
+
+| Sensor | High spike | Low spike |
+|---|---|---|
+| Zone 1 | 245 °C | 50 °C |
+| Zone 2 | 250 °C | 40 °C |
+| Zone 3 | 240 °C | 55 °C |
+| Motor | 80 RPM | 0 RPM |
+| Diameter | 3.25 mm | 2.50 mm |
+| Winder | 70 RPM | 0 RPM |
+
 ### npm scripts
 
 ```bash
@@ -309,20 +349,20 @@ npm run build && npm start
 ### Component tree
 
 ```
-<TelemetryHealthProvider>         context/TelemetryHealthContext.tsx
-  <TelemetryProvider>              context/TelemetryContext.tsx
+<TelemetryHealthProvider>         context/TelemetryHealthContext.tsx — monitors telemetry freshness (2 s timeout)
+  <TelemetryProvider>              context/TelemetryContext.tsx — distributes live data + sendCommand
     <div.app>
-      <NavigationBar />            Navigation + connection status indicator
+      <NavigationBar />            Navigation + LIVE/OFFLINE health indicator (pulsing green dot)
       <Dashboard />                pages/Dashboard.tsx (default page)
-        <TemperatureGauge /> ×2    Zone 1 & Zone 2 temperature displays
-        <DiameterChart />          Filament diameter history chart
-        <MotorRPM />               Motor RPM gauge
-        <SystemStatus />           Device info panel
-        <Alerts />                 Alerts panel
+        <TemperatureGauge /> ×2    Zone 1 (setpoint 220°C) & Zone 2 (setpoint 215°C) — Grafana-style gauges
+        <DiameterChart />          MUI LineChart with pause/resume, stats, warning ref lines
+        <MotorRPM />               Motor RPM display
+        <SystemStatus />           Network, safety, data logging status
+        <Alerts />                 Color-coded alert panel (WARN/CRIT/INFO)
       <Settings />                 pages/Settings.tsx (accessible via nav)
-        PID inputs                 P-Gain, I-Gain, D-Gain controls
-        Motor slider               Speed control
-        Buttons                    Apply & Start, Emergency Stop
+        PID inputs                 P-Gain, I-Gain, D-Gain (cosmetic — no SET_PID command exists)
+        MUI Motor slider           Speed control (sends SET_MOTOR_SPEED)
+        Buttons                    Apply & Start (sends SET_MOTOR_SPEED + START), Emergency Stop
     </div>
   </TelemetryProvider>
 </TelemetryHealthProvider>
@@ -332,8 +372,8 @@ npm run build && npm start
 
 | Page | Features |
 |---|---|
-| **Dashboard** | Temperature gauges, diameter chart, motor RPM, system status, alerts |
-| **Settings** | PID control inputs, motor speed slider, Apply button, Emergency Stop |
+| **Dashboard** | 2 temperature gauges (setpoints 220/215°C), diameter chart (last 20 readings) with pause/resume + stats, motor RPM, system status, alerts |
+| **Settings** | PID control inputs (cosmetic — no `SET_PID` command exists), MUI motor speed slider, Apply & Start button, Emergency Stop button |
 
 ### State — TelemetryContext values
 
@@ -345,9 +385,43 @@ npm run build && npm start
 | `isConnected` | `boolean` | WebSocket to server is open |
 | `sendCommand` | `(cmd: DeviceCommand) => void` | Sends a command over WebSocket |
 
+### State — TelemetryHealthContext values
+
+| Value | Type | Description |
+|---|---|---|
+| `isHealthy` | `boolean` | Telemetry received within last 2 seconds |
+| `lastUpdate` | `number \| null` | Timestamp of last telemetry update |
+
+### Alert system — `useAlerts` hook
+
+Generates `AlertItem[]` with id, type (`warning`/`danger`/`info`), message, and timestamp. Capped at 50 alerts with a 15-second cooldown per alert key.
+
+| Condition | Alert type | Message |
+|---|---|---|
+| Temperature ≥ 230°C | danger | "[Zone N] CRITICAL: X°C" |
+| Temperature ≥ 215°C | warning | "[Zone N] WARNING: X°C" |
+| Temperature < 60°C | info | "[Zone N] possible sensor failure: X°C" |
+| Diameter outside DANGER range | danger | "Filament diameter CRITICAL: X mm" |
+| Diameter outside WARNING range | warning | "Filament diameter WARNING: X mm" |
+| Motor speed = 0 RPM | danger | "Motor stalled: 0 RPM" |
+| Motor speed > 60 RPM | warning | "Motor speed abnormal: X RPM" |
+| Winder speed = 0 RPM | warning | "Winder stopped: 0 RPM" |
+| Winder speed > 55 RPM | warning | "Winder speed abnormal: X RPM" |
+
 ### WebSocket reconnect behaviour
 
-`useWebSocket.ts` retries the connection every **3 seconds** if the server is unreachable.
+`useWebSocket.ts` retries the connection every **3 seconds** if the server is unreachable. On connect, it also calls `recordTelemetryUpdate()` from the health context to indicate the data stream is alive.
+
+### DiameterChart features
+
+- **Pause/resume:** click the chart to toggle a "PAUSED" badge and freeze the data snapshot.
+- **Stats row:** real-time Min, Max, Avg, and standard deviation (σ) below the chart.
+- **Warning reference lines:** yellow dashed lines at WARNING_MIN (2.78 mm) and WARNING_MAX (2.92 mm) with labels.
+- **Color-coded current value:** green (within warning), yellow (between warning and danger), red (outside danger).
+
+### Routing
+
+No external router (react-router-dom is not used). Navigation is handled by `useState<Page>("dashboard")` in `App.tsx`, where `Page` is `"dashboard" | "settings"`.
 
 ### npm scripts
 
@@ -434,12 +508,22 @@ Response:
 
 ## 🚦 Sensor Thresholds & Alerts
 
-Alert thresholds can be configured in the Dashboard and Alerts components:
+Thresholds are defined in `shared/types.ts` as `SENSOR_THRESHOLDS` and used by both the `useAlerts` hook and the DiameterChart component:
 
 | Sensor | Warning | Danger |
 |---|---|---|
-| Any temperature zone | > 215 °C | > 230 °C |
+| Any temperature zone | ≥ 215 °C | ≥ 230 °C |
 | Filament diameter (target: 2.85 mm) | < 2.78 mm or > 2.92 mm | < 2.70 mm or > 3.00 mm |
+
+Additional alert rules (not threshold-based):
+
+| Condition | Type | Description |
+|---|---|---|
+| Temperature < 60 °C | info | Possible sensor failure |
+| Motor speed = 0 RPM | danger | Motor stalled |
+| Motor speed > 60 RPM | warning | Abnormal motor speed |
+| Winder speed = 0 RPM | warning | Winder stopped |
+| Winder speed > 55 RPM | warning | Abnormal winder speed |
 
 ---
 

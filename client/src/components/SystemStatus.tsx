@@ -86,7 +86,7 @@ export default function SystemStatus() {
               <span className="system-status__item-label">Safety:</span>
             </div>
             <span className={`system-status__item-value ${hasDanger || !isHealthy ? "system-status__item-value--offline" : "system-status__item-value--online"}`}>
-              {hasDanger ? "Danger" : "OK"}
+              {hasDanger || !isHealthy  ? "Danger" : "OK"}
             </span>
           </div>
 
