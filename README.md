@@ -448,9 +448,9 @@ npm run build        # production bundle → client/build/
   "data": [
     {
       "device_id": "esp32-simulator-01",
-      "temperature_zone1": 181.2,
-      "temperature_zone2": 199.8,
-      "temperature_zone3": 194.5,
+      "heater_1": 181.2,
+      "heater_2": 199.8,
+      "heater_3": 194.5,
       "motor_speed": 30.3,
       "filament_diameter": 2.86,
       "winder_speed": 25.1,
@@ -639,9 +639,9 @@ The scripts install missing `node_modules` automatically before starting.
 CREATE TABLE telemetry (
   id                 INTEGER PRIMARY KEY AUTOINCREMENT,
   timestamp          TEXT    NOT NULL DEFAULT (datetime('now')),
-  temperature_zone1  REAL,
-  temperature_zone2  REAL,
-  temperature_zone3  REAL,
+  heater_1           REAL,
+  heater_2           REAL,
+  heater_3           REAL,
   motor_speed        REAL,
   filament_diameter  REAL,
   winder_speed       REAL,
