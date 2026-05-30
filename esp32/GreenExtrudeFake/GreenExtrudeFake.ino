@@ -97,11 +97,16 @@ bool popFromBuffer(BufferedTelemetry &data) {
 // ─── Anomaly Injection Settings ───
 #define ANOMALY_CHANCE  0.08   // 8% chance to inject an abnormal sensor value
 
+// ─── LED Status Indicator ───
+// BUILT-IN LED (GPIO2) — solid when MQTT connected, blinks when offline
+#define LED_BUILTIN  2
+
 // ─── Global Objects ───
 WiFiClient espClient;
 PubSubClient mqtt(espClient);
 unsigned long lastTelemetryMs = 0;
 unsigned long lastReconnectAttemptMs = 0;
+unsigned long lastSuccessfulPublishMs = 0;  // LED indicator timestamp
 
 // ═══════════════════════════════════════════════════════
 //  Hardware & Sensor Interface Layer
@@ -282,6 +287,7 @@ void publishTelemetry(BufferedTelemetry data) {
 
   bool isHistorical = (millis() - data.timestamp_ms > 2000);
   if (mqtt.publish(TOPIC_TELEMETRY, payload)) {
+    lastSuccessfulPublishMs = millis();
     Serial.printf("[TX%s] t1=%.1f t2=%.1f t3=%.1f | motor=%.0f | dia=%.2f | winder=%.0f\n",
                   isHistorical ? "-OFFLINE" : "",
                   data.heater_1, data.heater_2, data.heater_3, data.motor_speed, data.filament_diameter, data.winder_speed);
@@ -402,6 +408,10 @@ void setup() {
   randomSeed(analogRead(0));
 
   initHardware(); // Initialize hardware interfaces and pin modes
+
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, LOW);
+
   setupWiFi();
 
   mqtt.setServer(MQTT_BROKER, MQTT_PORT);
@@ -411,6 +421,16 @@ void setup() {
 }
 
 void loop() {
+  // ─── Built-in LED: OK = solid, ANY problem = blink ───
+  unsigned long sinceLastPublish = millis() - lastSuccessfulPublishMs;
+  if (sinceLastPublish < 1500) {
+    digitalWrite(LED_BUILTIN, HIGH);                  // Solid = data flowing normally
+  } else if (sinceLastPublish < 5000) {
+    digitalWrite(LED_BUILTIN, (millis() / 250) % 2);  // Blink = data stuck (>1.5s no publish)
+  } else {
+    digitalWrite(LED_BUILTIN, (millis() / 100) % 2);  // Fast blink = long outage (>5s)
+  }
+
   // If Wi-Fi is lost, pause loops and let ESP32 reconnect in the background
   if (WiFi.status() != WL_CONNECTED) {
     static unsigned long lastWifiLog = 0;
