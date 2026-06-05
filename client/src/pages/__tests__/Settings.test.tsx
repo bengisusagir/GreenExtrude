@@ -59,12 +59,28 @@ describe("Settings Page", () => {
     expect(screen.getByTestId("motor-speed-slider")).toBeInTheDocument();
   });
 
-  it("CMP-SET-04: Apply & Start sends SET_MOTOR_SPEED then START commands", async () => {
+  it("CMP-SET-03b: renders temperature set point inputs for all 3 zones", () => {
+    render(<Settings />);
+    expect(screen.getByLabelText("Zone 1")).toBeInTheDocument();
+    expect(screen.getByLabelText("Zone 2")).toBeInTheDocument();
+    expect(screen.getByLabelText("Zone 3")).toBeInTheDocument();
+  });
+
+  it("CMP-SET-04: Apply & Start sends temperature set points, motor speed, then START", async () => {
     render(<Settings />);
     const applyBtn = screen.getByText("APPLY & START EXTRUSION");
     fireEvent.click(applyBtn);
 
-    expect(mockSendCommand).toHaveBeenCalledTimes(2);
+    expect(mockSendCommand).toHaveBeenCalledTimes(5);
+    expect(mockSendCommand).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "SET_TEMPERATURE", zone: 1 })
+    );
+    expect(mockSendCommand).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "SET_TEMPERATURE", zone: 2 })
+    );
+    expect(mockSendCommand).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "SET_TEMPERATURE", zone: 3 })
+    );
     expect(mockSendCommand).toHaveBeenCalledWith(
       expect.objectContaining({ type: "SET_MOTOR_SPEED" })
     );

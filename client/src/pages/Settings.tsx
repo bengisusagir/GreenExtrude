@@ -9,9 +9,31 @@ export default function Settings() {
   const [dGain, setDGain] = useState(0.10);
   const [motorSpeed, setMotorSpeed] = useState(45);
 
+  const [tempZone1, setTempZone1] = useState(220);
+  const [tempZone2, setTempZone2] = useState(215);
+  const [tempZone3, setTempZone3] = useState(210);
+
   const { isConnected, sendCommand } = useTelemetry();
 
   const handleApplyAndStart = () => {
+    sendCommand({
+      type: "SET_TEMPERATURE",
+      zone: 1,
+      value: tempZone1,
+      timestamp: new Date().toISOString(),
+    });
+    sendCommand({
+      type: "SET_TEMPERATURE",
+      zone: 2,
+      value: tempZone2,
+      timestamp: new Date().toISOString(),
+    });
+    sendCommand({
+      type: "SET_TEMPERATURE",
+      zone: 3,
+      value: tempZone3,
+      timestamp: new Date().toISOString(),
+    });
     sendCommand({
       type: "SET_MOTOR_SPEED",
       value: motorSpeed,
@@ -28,6 +50,9 @@ export default function Settings() {
       iGain,
       dGain,
       motorSpeed,
+      tempZone1,
+      tempZone2,
+      tempZone3,
     });
   };
 
@@ -91,6 +116,52 @@ export default function Settings() {
               min="0"
               max="10"
             />
+          </div>
+        </div>
+
+        {/* ─── Temperature Set Points ─── */}
+        <div className="settings__temp-section">
+          <h2 className="settings__section-title">Heater Set Points (°C)</h2>
+          <div className="settings__temp-grid">
+            <div className="settings__temp-item">
+              <label className="settings__temp-label" htmlFor="temp-zone1">Zone 1</label>
+              <input
+                id="temp-zone1"
+                type="number"
+                className="settings__temp-input settings__temp-input--zone1"
+                value={tempZone1}
+                onChange={(e) => setTempZone1(parseFloat(e.target.value) || 0)}
+                step="5"
+                min="0"
+                max="300"
+              />
+            </div>
+            <div className="settings__temp-item">
+              <label className="settings__temp-label" htmlFor="temp-zone2">Zone 2</label>
+              <input
+                id="temp-zone2"
+                type="number"
+                className="settings__temp-input settings__temp-input--zone2"
+                value={tempZone2}
+                onChange={(e) => setTempZone2(parseFloat(e.target.value) || 0)}
+                step="5"
+                min="0"
+                max="300"
+              />
+            </div>
+            <div className="settings__temp-item">
+              <label className="settings__temp-label" htmlFor="temp-zone3">Zone 3</label>
+              <input
+                id="temp-zone3"
+                type="number"
+                className="settings__temp-input settings__temp-input--zone3"
+                value={tempZone3}
+                onChange={(e) => setTempZone3(parseFloat(e.target.value) || 0)}
+                step="5"
+                min="0"
+                max="300"
+              />
+            </div>
           </div>
         </div>
 
