@@ -4,7 +4,7 @@ import type { TelemetryData, WsMessage, DeviceCommand, DeviceStatusMessage } fro
 import { recordTelemetryUpdate } from "../context/TelemetryHealthContext";
 
 const WS_URL = "ws://localhost:3002";
-const HISTORY_MAX_LENGTH = 100;
+const HISTORY_MAX_LENGTH = 500;
 
 interface UseWebSocketReturn {
   telemetry: TelemetryData | null;

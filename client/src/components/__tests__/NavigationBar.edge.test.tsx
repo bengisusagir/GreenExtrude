@@ -3,8 +3,6 @@
  * GreenExtrude — NavigationBar Component Edge Case Tests
  * ═══════════════════════════════════════════════════════════════════════════
  *
- * Tests are written for the EXPECTED behavior, not the current implementation.
- * Any test that FAILS indicates a gap in the production code that should be fixed.
  *
  * NavigationBar is primarily a display/navigation component. Most of its
  * behavior is straightforward. The key edge cases are:
@@ -28,6 +26,18 @@ vi.mock("../../context/TelemetryHealthContext", () => ({
   useTelemetryHealth: () => ({ isHealthy: mockIsHealthy }),
   recordTelemetryUpdate: vi.fn(),
   TelemetryHealthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
+const mockSendCommand = vi.fn();
+
+vi.mock("../../context/TelemetryContext", () => ({
+  useTelemetry: () => ({
+    isConnected: true,
+    sendCommand: mockSendCommand,
+    telemetry: null,
+    history: [],
+    deviceStatus: null,
+  }),
 }));
 
 describe("NavigationBar Edge Cases — Expected Behavior", () => {

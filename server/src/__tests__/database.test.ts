@@ -494,8 +494,8 @@ describe("Edge Cases & Data Integrity", () => {
       insertTelemetry({ ...normalData, device_id: `esp32-seq-${i}` });
     }
 
-    const results = getRecentTelemetry(50);
-    expect(results).toHaveLength(50);
+    const results = getRecentTelemetry(100);
+    expect(results).toHaveLength(100);
     expect(results[0].device_id).toBe("esp32-seq-49");
     expect(results[49].device_id).toBe("esp32-seq-0");
   });

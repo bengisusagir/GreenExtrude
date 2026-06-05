@@ -22,7 +22,7 @@ wss.on("connection", (ws: WebSocket) => {
   console.log(`[WS] Dashboard client connected (total: ${wsClients.size})`);
 
   // Send recent telemetry history on connect
-  const history = getRecentTelemetry(50);
+  const history = getRecentTelemetry(100);
   const msg: WsMessage<TelemetryData[]> = { type: "history", payload: history.reverse() };
   ws.send(JSON.stringify(msg));
 
@@ -80,7 +80,8 @@ const server = http.createServer((req, res) => {
 
   // GET /api/telemetry
   if (req.method === "GET" && pathname === "/api/telemetry") {
-    const limit = parseInt(parsedUrl.query.limit as string) || 100;
+    const rawLimit = parsedUrl.query.limit as string | undefined;
+    const limit = rawLimit ? parseInt(rawLimit) || 100 : 100;
     const data = getRecentTelemetry(limit);
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ success: true, data: data.reverse() }));

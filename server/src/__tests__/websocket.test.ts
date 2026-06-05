@@ -136,7 +136,7 @@ describe("Server WebSocket", () => {
       clients.add(ws);
 
       // Send history on connect (mirrors index.ts)
-      const history = getRecentTelemetry(50);
+      const history = getRecentTelemetry(100);
       const msg: WsMessage<TelemetryData[]> = { type: "history", payload: history.reverse() };
       ws.send(JSON.stringify(msg));
 

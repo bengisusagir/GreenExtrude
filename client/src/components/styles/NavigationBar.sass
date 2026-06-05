@@ -52,39 +52,142 @@
   &__actions
     display: flex
     align-items: center
-    gap: $spacing-md
+    gap: $spacing-sm
 
-  &__bell
-    position: relative
-    background: transparent
+  // ─── Control Buttons (START / E-STOP) ───
+  &__ctrl-btn
+    height: 32px
+    padding: 0 12px
     border: none
+    border-radius: 6px
+    font-size: 0.7rem
+    font-weight: 700
+    letter-spacing: 0.5px
     cursor: pointer
+    text-transform: uppercase
+    font-family: $font-family
+    transition: all $transition-fast ease
+
+    &:disabled
+      opacity: 0.35
+      cursor: not-allowed
+
+    &--start
+      background: $color-primary
+      color: #000
+
+      &:hover:not(:disabled)
+        box-shadow: 0 0 12px $color-primary-glow
+
+    &--estop
+      background: $color-danger
+      color: white
+
+      &:hover:not(:disabled)
+        box-shadow: 0 0 12px rgba($color-danger, 0.6)
+
+  // ─── Quality Report Dropdown ───
+  &__report-wrapper
+    position: relative
+
+  &__report-btn
+    height: 32px
+    padding: 0 12px
+    border: 1px solid $color-border
+    border-radius: 6px
+    background: $color-bg
     color: $color-text-secondary
-    padding: $spacing-xs
-    transition: color 0.2s
+    font-size: 0.75rem
+    font-weight: 600
+    font-family: $font-family
+    cursor: pointer
+    transition: all $transition-fast ease
+
+    &:hover:not(:disabled)
+      color: $color-text
+      border-color: $color-primary
+
+    &:disabled
+      opacity: 0.35
+      cursor: not-allowed
+
+  &__report-dropdown
+    position: absolute
+    top: calc(100% + 8px)
+    right: 0
+    width: 280px
+    background: $color-bg-card
+    border: 1px solid $color-border
+    border-radius: $border-radius
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4)
+    padding: $spacing-md
+    z-index: 100
+    display: flex
+    flex-direction: column
+    gap: 6px
+    animation: fadeIn $transition-fast ease
+
+  &__report-header
+    font-size: 0.85rem
+    font-weight: 700
+    color: $color-text
+    padding-bottom: $spacing-xs
+    border-bottom: 1px solid $color-border
+    margin-bottom: 4px
+
+  &__report-row
+    display: flex
+    justify-content: space-between
+    align-items: center
+    font-size: 0.78rem
+    color: $color-text-secondary
+
+  &__report-val
+    font-family: $font-mono
+    font-weight: 600
+    color: $color-text
+
+    &--warn
+      color: $color-warning
+
+    &--danger
+      color: $color-danger
+
+    &--ok
+      color: $color-success
+
+  &__report-divider
+    height: 1px
+    background: $color-border
+    margin: 2px 0
+
+  &__report-footer
+    font-size: 0.7rem
+    color: $color-text-secondary
+    text-align: center
+    padding-top: 4px
+    border-top: 1px solid $color-border
+
+  &__report-export
+    width: 100%
+    margin-top: $spacing-sm
+    padding: 8px 0
+    border: 1px solid $color-primary
+    border-radius: 6px
+    background: transparent
+    color: $color-primary
+    font-size: 0.78rem
+    font-weight: 700
+    font-family: $font-family
+    cursor: pointer
+    transition: all $transition-fast ease
 
     &:hover
-      color: $color-text
+      background: $color-primary
+      color: #000
+      box-shadow: 0 0 12px $color-primary-glow
 
-  &__notification-dot
-    position: absolute
-    top: 0
-    right: 0
-    width: 8px
-    height: 8px
-    background: $color-danger
-    border-radius: 50%
-    border: 2px solid $color-bg-card
-
-  &__avatar
-    cursor: pointer
-
-    svg
-      transition: transform 0.2s
-
-    &:hover svg
-      transform: scale(1.1)
-
+  // ─── System Status ───
   &__system-status
     display: flex
     align-items: center
@@ -120,3 +223,11 @@
     opacity: 1
   50%
     opacity: 0.3
+
+@keyframes fadeIn
+  from
+    opacity: 0
+    transform: translateY(-4px)
+  to
+    opacity: 1
+    transform: translateY(0)

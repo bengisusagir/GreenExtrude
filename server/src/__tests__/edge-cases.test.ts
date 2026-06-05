@@ -155,7 +155,7 @@ describe("Server Edge Cases & Stress Tests", () => {
     await new Promise<void>((resolve) => server.on("listening", resolve));
 
     server.on("connection", (ws) => {
-      const history = getRecentTelemetry(50);
+      const history = getRecentTelemetry(100);
       const msg: WsMessage<TelemetryData[]> = { type: "history", payload: history.reverse() };
       ws.send(JSON.stringify(msg));
 
