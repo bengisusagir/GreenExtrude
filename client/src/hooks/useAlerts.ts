@@ -60,9 +60,9 @@ export function useAlerts(): AlertItem[] {
     const dia = telemetry.filament_diameter;
 
     if (dia !== undefined && typeof dia === "number") {
-      if (dia < DANGER_MIN || dia > DANGER_MAX) {
+      if (dia <= DANGER_MIN || dia >= DANGER_MAX) {
         check("dia-danger", "danger", `Filament diameter out of spec: ${dia.toFixed(2)}mm (danger range)`);
-      } else if (dia < WARNING_MIN || dia > WARNING_MAX) {
+      } else if (dia <= WARNING_MIN || dia >= WARNING_MAX) {
         check("dia-warn", "warning", `Filament diameter drifting: ${dia.toFixed(2)}mm (target ${TARGET}mm)`);
       }
     }

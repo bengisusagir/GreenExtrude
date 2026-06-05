@@ -17,6 +17,11 @@ export default function TemperatureGauge({
   // Calculate max temperature based on set point with some buffer
   const maxTemp = Math.max(setPoint * 1.2, 250);
 
+  // SAFETY: Clamp temperature to [0, maxTemp] range.
+  // - Negative temperatures are impossible for heaters (sensor malfunction)
+  // - Values exceeding maxTemp cause undefined gauge-library behavior
+  const clampedTemp = Math.min(Math.max(temperature, 0), maxTemp);
+
   // Calculate set point position for outer indicator (gauge is from 9 o'clock to 3 o'clock, 180 degrees)
   // Normalize set point to 0-1 range, then map to gauge angles
   const setPointRatio = setPoint / maxTemp;
@@ -32,7 +37,7 @@ export default function TemperatureGauge({
 
       <div className="temp-gauge__gauge-wrapper">
         <GaugeComponent
-          value={temperature}
+          value={clampedTemp}
           arc={{
             nbSubArcs: 100,
             colorArray: ["#FF6B35", "#FFB347", "#2ECC71"],
@@ -52,7 +57,7 @@ export default function TemperatureGauge({
           type="grafana"
         />
         <div className="temp-gauge__value">
-          {Number.isInteger(temperature) ? temperature : temperature.toFixed(1)}
+          {Number.isInteger(clampedTemp) ? clampedTemp : clampedTemp.toFixed(1)}
           {unit}
         </div>
       </div>

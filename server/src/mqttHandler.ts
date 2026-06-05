@@ -9,9 +9,10 @@ import {
   DeviceStatusMessage,
 } from "../../shared/types";
 
-const MQTT_PORT = 1883;
+const DEFAULT_MQTT_PORT = 1883;
 
 let aedes: Aedes;
+let mqttServer: ReturnType<typeof createTcpServer>;
 let lastDeviceStatus: DeviceStatusMessage | null = null;
 
 type BroadcastFn = (data: string) => void;
@@ -20,12 +21,26 @@ export function getLastDeviceStatus(): DeviceStatusMessage | null {
   return lastDeviceStatus;
 }
 
-export function initMqttBroker(wsBroadcast: BroadcastFn): Aedes {
+export function closeMqttBroker(): Promise<void> {
+  return new Promise((resolve) => {
+    if (!aedes) { resolve(); return; }
+    aedes.close(() => {
+      if (mqttServer) {
+        mqttServer.close(() => resolve());
+      } else {
+        resolve();
+      }
+    });
+  });
+}
+
+export function initMqttBroker(wsBroadcast: BroadcastFn, port?: number): Aedes {
+  const mqttPort = port ?? DEFAULT_MQTT_PORT;
   aedes = new Aedes();
 
-  const mqttServer = createTcpServer(aedes.handle);
-  mqttServer.listen(MQTT_PORT, () => {
-    console.log(`[MQTT] Broker running on tcp://localhost:${MQTT_PORT}`);
+  mqttServer = createTcpServer(aedes.handle);
+  mqttServer.listen(mqttPort, () => {
+    console.log(`[MQTT] Broker running on tcp://localhost:${mqttPort}`);
   });
 
   // Client connected

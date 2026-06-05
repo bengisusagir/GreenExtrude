@@ -30,7 +30,9 @@ export default function MotorRPM({ rpm }: MotorRPMProps) {
       </div>
 
       <div className="motor-rpm-slider__value">
-        <span className="motor-rpm-slider__value-number">{rpm}</span>
+        <span className="motor-rpm-slider__value-number">
+          {rpm !== undefined ? Math.max(0, rpm) : "—"}
+        </span>
         <span className="motor-rpm-slider__value-unit">RPM</span>
       </div>
 

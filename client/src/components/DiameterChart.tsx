@@ -56,6 +56,10 @@ export default function DiameterChart({
     };
   }, [displayData]);
 
+  const invalidReadingCount = useMemo(() => {
+    return displayData.filter((d) => d.diameter <= 0).length;
+  }, [displayData]);
+
   // Stats summary
   const stats = useMemo(() => {
     const diameters = displayData.map((d) => d.diameter).filter((v) => v > 0);
@@ -92,9 +96,9 @@ export default function DiameterChart({
         {currentValue !== undefined && (
           <div
             className="diameter-chart__current-value"
-            style={{ color: getStatusColor(currentValue) }}
+            style={{ color: currentValue <= 0 ? "#9e9e9e" : getStatusColor(currentValue) }}
           >
-            {currentValue.toFixed(3)} mm
+            {currentValue <= 0 ? "⚠ Sensor Error" : `${currentValue.toFixed(3)} mm`}
           </div>
         )}
       </div>
@@ -213,6 +217,12 @@ export default function DiameterChart({
           </LineChart>
         </div>
       </div>
+
+      {invalidReadingCount > 0 && (
+        <div className="diameter-chart__sensor-error" style={{ color: "#9e9e9e", fontSize: "0.75rem", textAlign: "center", padding: "4px 0" }}>
+          ⚠ Sensor Error: {invalidReadingCount} invalid reading{invalidReadingCount > 1 ? "s" : ""} (diameter ≤ 0)
+        </div>
+      )}
 
       {stats && (
         <div className="diameter-chart__stats">

@@ -15,11 +15,14 @@ interface AlertsProps {
   alerts?: AlertItem[];
 }
 
-const TYPE_CONFIG = {
+const TYPE_CONFIG: Record<string, { label: string; bg: string; border: string; text: string }> = {
   warning: { label: "WARN",  bg: "rgba(255,152,0,0.12)",  border: "#ff9800", text: "#ffb74d" },
   danger:  { label: "CRIT",  bg: "rgba(244,67,54,0.12)",  border: "#f44336", text: "#ef9a9a" },
   info:    { label: "INFO",  bg: "rgba(58,176,255,0.12)", border: "#3AB0FF", text: "#90caf9" },
 };
+
+// Fallback for unknown alert types — prevents crash on unexpected type values
+const FALLBACK_CONFIG = { label: "????",  bg: "rgba(158,158,158,0.12)", border: "#9e9e9e", text: "#bdbdbd" };
 
 export default function Alerts({ alerts = [] }: AlertsProps) {
   const hasAlerts = alerts.length > 0;
@@ -53,7 +56,7 @@ export default function Alerts({ alerts = [] }: AlertsProps) {
         ) : (
           <div className="alerts__list">
             {alerts.map((alert) => {
-              const cfg = TYPE_CONFIG[alert.type];
+              const cfg = TYPE_CONFIG[alert.type] ?? FALLBACK_CONFIG;
               return (
                 <div
                   key={alert.id}

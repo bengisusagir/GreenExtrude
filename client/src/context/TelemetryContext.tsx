@@ -31,7 +31,7 @@ interface TelemetryContextValue {
 // ─── Context Object ───────────────────────────────────────────────────────────
 
 // `null` as default so useTelemetry() can detect if called outside the provider.
-const TelemetryContext = createContext<TelemetryContextValue | null>(null);
+export const TelemetryContext = createContext<TelemetryContextValue | null>(null);
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
