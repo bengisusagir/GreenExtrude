@@ -273,7 +273,7 @@ void setupWiFi() {
 
 void publishTelemetry(BufferedTelemetry data) {
   // Build JSON payload matching the TelemetryData schema exactly
-  StaticJsonDocument<384> doc;
+  StaticJsonDocument<512> doc;
   doc["device_id"]          = DEVICE_ID;
   doc["heater_1"]           = round(data.heater_1 * 100) / 100.0;
   doc["heater_2"]           = round(data.heater_2 * 100) / 100.0;
@@ -294,7 +294,7 @@ void publishTelemetry(BufferedTelemetry data) {
            (data.timestamp_ms / 1000) % 60);
   doc["timestamp"] = ts;
 
-  char payload[384];
+  char payload[512];
   serializeJson(doc, payload);
 
   bool isHistorical = (millis() - data.timestamp_ms > 2000);
@@ -434,6 +434,7 @@ void setup() {
   setupWiFi();
 
   mqtt.setServer(MQTT_BROKER, MQTT_PORT);
+  mqtt.setBufferSize(512); // Increase buffer size to handle larger JSON payloads
   mqtt.setKeepAlive(30); // 30s Keep-alive protects against network jitter
   mqtt.setCallback(handleCommand);
   mqttReconnect();
