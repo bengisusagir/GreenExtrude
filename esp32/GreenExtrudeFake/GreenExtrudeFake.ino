@@ -43,6 +43,9 @@ struct SimState {
   float motor_speed;     // RPM
   float filament_dia;    // mm
   float winder_speed;    // RPM
+  float set_point_1;
+  float set_point_2;
+  float set_point_3;
   bool  running;
 };
 
@@ -53,6 +56,9 @@ SimState state = {
   30.0,    // motor_speed
   2.85,    // filament_dia
   25.0,    // winder_speed
+  220.0,   // set_point_1
+  215.0,   // set_point_2
+  210.0,   // set_point_3
   true     // running
 };
 
@@ -64,6 +70,9 @@ struct BufferedTelemetry {
   float motor_speed;
   float filament_diameter;
   float winder_speed;
+  float set_point_1;
+  float set_point_2;
+  float set_point_3;
   unsigned long timestamp_ms;
 };
 
@@ -272,6 +281,9 @@ void publishTelemetry(BufferedTelemetry data) {
   doc["motor_speed"]        = round(data.motor_speed * 100) / 100.0;
   doc["filament_diameter"]  = round(data.filament_diameter * 100) / 100.0;
   doc["winder_speed"]       = round(data.winder_speed * 100) / 100.0;
+  doc["set_point_1"]        = round(data.set_point_1 * 100) / 100.0;
+  doc["set_point_2"]        = round(data.set_point_2 * 100) / 100.0;
+  doc["set_point_3"]        = round(data.set_point_3 * 100) / 100.0;
 
   // Preserve generation time by converting timestamp_ms into ISO 8601 format
   char ts[25];
@@ -321,8 +333,9 @@ void handleCommand(char* topic, byte* payload, unsigned int length) {
   if (strcmp(type, "SET_TEMPERATURE") == 0) {
     int zone = doc["zone"] | 0;
     float val = doc["value"] | 0;
-    controlHeater(zone, val);
-    Serial.printf("[CMD] Heater %d target temperature -> %.1f C\n", zone, val);
+    controlHeater(zone, val);    if (zone == 1) state.set_point_1 = val;
+    if (zone == 2) state.set_point_2 = val;
+    if (zone == 3) state.set_point_3 = val;    Serial.printf("[CMD] Heater %d target temperature -> %.1f C\n", zone, val);
 
   } else if (strcmp(type, "SET_MOTOR_SPEED") == 0) {
     float val = doc["value"] | 0.0;
@@ -473,6 +486,9 @@ void loop() {
       newTelemetry.motor_speed = readMotorSpeed();
       newTelemetry.filament_diameter = readFilamentDiameter();
       newTelemetry.winder_speed = readWinderSpeed();
+      newTelemetry.set_point_1 = state.set_point_1;
+      newTelemetry.set_point_2 = state.set_point_2;
+      newTelemetry.set_point_3 = state.set_point_3;
       newTelemetry.timestamp_ms = now;
 
       pushToBuffer(newTelemetry);
