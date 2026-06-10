@@ -15,6 +15,7 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
+#include <Preferences.h>
 
 // ─── WiFi Settings ───
 #define WIFI_SSID     "WIFI_SSID"
@@ -43,6 +44,12 @@ struct SimState {
   float motor_speed;     // RPM
   float filament_dia;    // mm
   float winder_speed;    // RPM
+  float set_point_1;
+  float set_point_2;
+  float set_point_3;
+  float kp;
+  float ki;
+  float kd;
   bool  running;
 };
 
@@ -53,6 +60,12 @@ SimState state = {
   30.0,    // motor_speed
   2.85,    // filament_dia
   25.0,    // winder_speed
+  220.0,   // set_point_1
+  215.0,   // set_point_2
+  210.0,   // set_point_3
+  1.20,    // kp
+  0.05,    // ki
+  0.10,    // kd
   true     // running
 };
 
@@ -64,6 +77,12 @@ struct BufferedTelemetry {
   float motor_speed;
   float filament_diameter;
   float winder_speed;
+  float set_point_1;
+  float set_point_2;
+  float set_point_3;
+  float kp;
+  float ki;
+  float kd;
   unsigned long timestamp_ms;
 };
 
@@ -107,6 +126,7 @@ PubSubClient mqtt(espClient);
 unsigned long lastTelemetryMs = 0;
 unsigned long lastReconnectAttemptMs = 0;
 unsigned long lastSuccessfulPublishMs = 0;  // LED indicator timestamp
+Preferences preferences;
 
 // ═══════════════════════════════════════════════════════
 //  Hardware & Sensor Interface Layer
@@ -163,6 +183,9 @@ float readFilamentDiameter() {
   // TODO: Read physical filament diameter sensor value
   return 0.0;
 #else
+  if (state.motor_speed <= 0) {
+    return 0.0;
+  }
   return maybeAnomaly(addNoise(state.filament_dia, 0.08), state.filament_dia, 3.25, 2.50);
 #endif
 }
@@ -193,6 +216,7 @@ void controlMotorSpeed(float speedValue) {
   // TODO: Output speed control command to physical motor driver (e.g., PWM, analogWrite)
 #else
   state.motor_speed = speedValue;
+  state.filament_dia = (speedValue > 0) ? 2.85f : 0.0f;
 #endif
 }
 
@@ -264,7 +288,7 @@ void setupWiFi() {
 
 void publishTelemetry(BufferedTelemetry data) {
   // Build JSON payload matching the TelemetryData schema exactly
-  StaticJsonDocument<384> doc;
+  StaticJsonDocument<512> doc;
   doc["device_id"]          = DEVICE_ID;
   doc["heater_1"]           = round(data.heater_1 * 100) / 100.0;
   doc["heater_2"]           = round(data.heater_2 * 100) / 100.0;
@@ -272,6 +296,12 @@ void publishTelemetry(BufferedTelemetry data) {
   doc["motor_speed"]        = round(data.motor_speed * 100) / 100.0;
   doc["filament_diameter"]  = round(data.filament_diameter * 100) / 100.0;
   doc["winder_speed"]       = round(data.winder_speed * 100) / 100.0;
+  doc["set_point_1"]        = round(data.set_point_1 * 100) / 100.0;
+  doc["set_point_2"]        = round(data.set_point_2 * 100) / 100.0;
+  doc["set_point_3"]        = round(data.set_point_3 * 100) / 100.0;
+  doc["kp"]                 = round(data.kp * 100) / 100.0;
+  doc["ki"]                 = round(data.ki * 100) / 100.0;
+  doc["kd"]                 = round(data.kd * 100) / 100.0;
 
   // Preserve generation time by converting timestamp_ms into ISO 8601 format
   char ts[25];
@@ -282,7 +312,7 @@ void publishTelemetry(BufferedTelemetry data) {
            (data.timestamp_ms / 1000) % 60);
   doc["timestamp"] = ts;
 
-  char payload[384];
+  char payload[512];
   serializeJson(doc, payload);
 
   bool isHistorical = (millis() - data.timestamp_ms > 2000);
@@ -320,18 +350,29 @@ void handleCommand(char* topic, byte* payload, unsigned int length) {
 
   if (strcmp(type, "SET_TEMPERATURE") == 0) {
     int zone = doc["zone"] | 0;
-    float val = doc["value"] | 0;
+    float val = doc["value"] | 0.0;
     controlHeater(zone, val);
+    preferences.begin("extrude", false);
+    if (zone == 1) { state.set_point_1 = val; preferences.putFloat("sp_1", val); }
+    if (zone == 2) { state.set_point_2 = val; preferences.putFloat("sp_2", val); }
+    if (zone == 3) { state.set_point_3 = val; preferences.putFloat("sp_3", val); }
+    preferences.end();
     Serial.printf("[CMD] Heater %d target temperature -> %.1f C\n", zone, val);
 
   } else if (strcmp(type, "SET_MOTOR_SPEED") == 0) {
     float val = doc["value"] | 0.0;
     controlMotorSpeed(val);
+    preferences.begin("extrude", false);
+    preferences.putFloat("m_spd", val);
+    preferences.end();
     Serial.printf("[CMD] Extruder motor target speed -> %.0f RPM\n", val);
 
   } else if (strcmp(type, "SET_WINDER_SPEED") == 0) {
     float val = doc["value"] | 0.0;
     controlWinderSpeed(val);
+    preferences.begin("extrude", false);
+    preferences.putFloat("w_spd", val);
+    preferences.end();
     Serial.printf("[CMD] Winder target speed -> %.0f RPM\n", val);
 
   } else if (strcmp(type, "EMERGENCY_STOP") == 0) {
@@ -340,15 +381,30 @@ void handleCommand(char* topic, byte* payload, unsigned int length) {
 
   } else if (strcmp(type, "START") == 0) {
     state.running = true;
-    controlMotorSpeed(30);
-    controlWinderSpeed(25);
-    Serial.println("[CMD] System started");
+    preferences.begin("extrude", true);
+    float savedMotor = preferences.getFloat("m_spd", 0.0f);
+    float savedWinder = preferences.getFloat("w_spd", 0.0f);
+    preferences.end();
+    controlMotorSpeed(savedMotor);
+    controlWinderSpeed(savedWinder);
+    Serial.printf("[CMD] System started. Resumed motor=%.0f RPM, winder=%.0f RPM\n", savedMotor, savedWinder);
 
   } else if (strcmp(type, "STOP") == 0) {
     state.running = false;
     controlMotorSpeed(0);
     controlWinderSpeed(0);
     Serial.println("[CMD] System stopped");
+
+  } else if (strcmp(type, "SET_PID") == 0) {
+    int pidZone = doc["zone"] | 0;
+    float pidVal = doc["value"] | 0.0;
+    preferences.begin("extrude", false);
+    if (pidZone == 1) { state.kp = pidVal; preferences.putFloat("kp", pidVal); }
+    if (pidZone == 2) { state.ki = pidVal; preferences.putFloat("ki", pidVal); }
+    if (pidZone == 3) { state.kd = pidVal; preferences.putFloat("kd", pidVal); }
+    preferences.end();
+    const char* pidLabel = pidZone == 1 ? "P" : pidZone == 2 ? "I" : "D";
+    Serial.printf("[CMD] PID %s-Gain -> %.2f\n", pidLabel, pidVal);
 
   } else {
     Serial.printf("[CMD] Unknown command: %s\n", type);
@@ -394,6 +450,30 @@ boolean mqttReconnect() {
   }
 }
 
+void loadSettings() {
+  preferences.begin("extrude", true);
+  state.set_point_1 = preferences.getFloat("sp_1", 0.0f);
+  state.set_point_2 = preferences.getFloat("sp_2", 0.0f);
+  state.set_point_3 = preferences.getFloat("sp_3", 0.0f);
+  
+  state.heater_1 = state.set_point_1;
+  state.heater_2 = state.set_point_2;
+  state.heater_3 = state.set_point_3;
+
+  state.motor_speed = preferences.getFloat("m_spd", 0.0f);
+  state.winder_speed = preferences.getFloat("w_spd", 0.0f);
+  state.filament_dia = (state.motor_speed > 0) ? 2.85f : 0.0f;
+
+  state.kp = preferences.getFloat("kp", 0.0f);
+  state.ki = preferences.getFloat("ki", 0.0f);
+  state.kd = preferences.getFloat("kd", 0.0f);
+  preferences.end();
+  Serial.printf("[SETTINGS] Loaded: sp1=%.1f sp2=%.1f sp3=%.1f | motor=%.0f | winder=%.0f | kp=%.2f ki=%.2f kd=%.2f\n",
+                state.set_point_1, state.set_point_2, state.set_point_3,
+                state.motor_speed, state.winder_speed,
+                state.kp, state.ki, state.kd);
+}
+
 // ═══════════════════════════════════════════════════════
 //  Arduino Setup & Loop
 // ═══════════════════════════════════════════════════════
@@ -408,6 +488,7 @@ void setup() {
   randomSeed(analogRead(0));
 
   initHardware(); // Initialize hardware interfaces and pin modes
+  loadSettings(); // Load values from Non-Volatile Storage (Preferences)
 
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
@@ -415,6 +496,7 @@ void setup() {
   setupWiFi();
 
   mqtt.setServer(MQTT_BROKER, MQTT_PORT);
+  mqtt.setBufferSize(512); // Increase buffer size to handle larger JSON payloads
   mqtt.setKeepAlive(30); // 30s Keep-alive protects against network jitter
   mqtt.setCallback(handleCommand);
   mqttReconnect();
@@ -458,20 +540,24 @@ void loop() {
   unsigned long now = millis();
   if (now - lastTelemetryMs >= TELEMETRY_INTERVAL_MS) {
     lastTelemetryMs = now;
-    if (state.running) {
-      BufferedTelemetry newTelemetry;
-      
-      newTelemetry.heater_1 = readHeaterTemperature(1);
-      newTelemetry.heater_2 = readHeaterTemperature(2);
-      newTelemetry.heater_3 = readHeaterTemperature(3);
-      newTelemetry.motor_speed = readMotorSpeed();
-      newTelemetry.filament_diameter = readFilamentDiameter();
-      newTelemetry.winder_speed = readWinderSpeed();
-      newTelemetry.timestamp_ms = now;
+    BufferedTelemetry newTelemetry;
+    
+    newTelemetry.heater_1 = readHeaterTemperature(1);
+    newTelemetry.heater_2 = readHeaterTemperature(2);
+    newTelemetry.heater_3 = readHeaterTemperature(3);
+    newTelemetry.motor_speed = readMotorSpeed();
+    newTelemetry.filament_diameter = readFilamentDiameter();
+    newTelemetry.winder_speed = readWinderSpeed();
+    newTelemetry.set_point_1 = state.set_point_1;
+    newTelemetry.set_point_2 = state.set_point_2;
+    newTelemetry.set_point_3 = state.set_point_3;
+    newTelemetry.kp = state.kp;
+    newTelemetry.ki = state.ki;
+    newTelemetry.kd = state.kd;
+    newTelemetry.timestamp_ms = now;
 
-      pushToBuffer(newTelemetry);
-      Serial.printf("[BUFF] Generated new telemetry packet. Queue size: %d\n", bufferCount);
-    }
+    pushToBuffer(newTelemetry);
+    Serial.printf("[BUFF] Generated new telemetry packet. Queue size: %d\n", bufferCount);
   }
 
   // Send queued data one packet per loop iteration if MQTT is connected

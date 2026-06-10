@@ -7,6 +7,12 @@ export interface TelemetryData {
   motor_speed: number;
   filament_diameter: number;
   winder_speed: number;
+  set_point_1?: number;
+  set_point_2?: number;
+  set_point_3?: number;
+  kp?: number;
+  ki?: number;
+  kd?: number;
   timestamp?: string;
 }
 
@@ -15,6 +21,7 @@ export type CommandType =
   | "SET_TEMPERATURE"
   | "SET_MOTOR_SPEED"
   | "SET_WINDER_SPEED"
+  | "SET_PID"
   | "EMERGENCY_STOP"
   | "START"
   | "STOP";

@@ -18,6 +18,9 @@ let state = {
   motor_speed: 30,        // RPM
   filament_diameter: 2.85, // mm
   winder_speed: 25,       // RPM
+  set_point_1: 220,
+  set_point_2: 215,
+  set_point_3: 210,
   running: true,
 };
 
@@ -53,6 +56,9 @@ function generateTelemetry(): TelemetryData {
     motor_speed: maybeInjectAnomaly(motor, state.motor_speed, 80, 0),
     filament_diameter: maybeInjectAnomaly(diameter, state.filament_diameter, 3.25, 2.50),
     winder_speed: maybeInjectAnomaly(winder, state.winder_speed, 70, 0),
+    set_point_1: state.set_point_1,
+    set_point_2: state.set_point_2,
+    set_point_3: state.set_point_3,
     timestamp: new Date().toISOString(),
   };
 }
@@ -100,9 +106,9 @@ client.on("message", (_topic: string, message: Buffer) => {
 
     switch (cmd.type) {
       case "SET_TEMPERATURE":
-        if (cmd.zone === 1) state.heater_1 = cmd.value ?? state.heater_1;
-        if (cmd.zone === 2) state.heater_2 = cmd.value ?? state.heater_2;
-        if (cmd.zone === 3) state.heater_3 = cmd.value ?? state.heater_3;
+        if (cmd.zone === 1) { state.heater_1 = cmd.value ?? state.heater_1; state.set_point_1 = cmd.value ?? state.set_point_1; }
+        if (cmd.zone === 2) { state.heater_2 = cmd.value ?? state.heater_2; state.set_point_2 = cmd.value ?? state.set_point_2; }
+        if (cmd.zone === 3) { state.heater_3 = cmd.value ?? state.heater_3; state.set_point_3 = cmd.value ?? state.set_point_3; }
         console.log(`[SIM] Heater ${cmd.zone} set to ${cmd.value}°C`);
         break;
 
@@ -114,6 +120,10 @@ client.on("message", (_topic: string, message: Buffer) => {
       case "SET_WINDER_SPEED":
         state.winder_speed = cmd.value ?? state.winder_speed;
         console.log(`[SIM] Winder speed set to ${cmd.value} RPM`);
+        break;
+
+      case "SET_PID":
+        console.log(`[SIM] PID ${cmd.zone === 1 ? "P" : cmd.zone === 2 ? "I" : "D"}-Gain set to ${cmd.value}`);
         break;
 
       case "EMERGENCY_STOP":

@@ -66,12 +66,12 @@ describe("Settings Page", () => {
     expect(screen.getByLabelText("Zone 3")).toBeInTheDocument();
   });
 
-  it("CMP-SET-04: Apply & Start sends temperature set points, motor speed, then START", async () => {
+  it("CMP-SET-04: Apply & Start sends temperature set points, PID, motor speed, then START", async () => {
     render(<Settings />);
     const applyBtn = screen.getByText("APPLY & START EXTRUSION");
     fireEvent.click(applyBtn);
 
-    expect(mockSendCommand).toHaveBeenCalledTimes(5);
+    expect(mockSendCommand).toHaveBeenCalledTimes(8);
     expect(mockSendCommand).toHaveBeenCalledWith(
       expect.objectContaining({ type: "SET_TEMPERATURE", zone: 1 })
     );
@@ -83,6 +83,15 @@ describe("Settings Page", () => {
     );
     expect(mockSendCommand).toHaveBeenCalledWith(
       expect.objectContaining({ type: "SET_MOTOR_SPEED" })
+    );
+    expect(mockSendCommand).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "SET_PID", zone: 1 })
+    );
+    expect(mockSendCommand).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "SET_PID", zone: 2 })
+    );
+    expect(mockSendCommand).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "SET_PID", zone: 3 })
     );
     expect(mockSendCommand).toHaveBeenCalledWith(
       expect.objectContaining({ type: "START" })

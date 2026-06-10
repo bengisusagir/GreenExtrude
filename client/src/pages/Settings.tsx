@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTelemetry } from "../context/TelemetryContext";
 import "./styles/Settings.sass";
 import { Slider } from "@mui/material";
 
 export default function Settings() {
+  const { isConnected, sendCommand, telemetry } = useTelemetry();
+
   const [pGain, setPGain] = useState(1.20);
   const [iGain, setIGain] = useState(0.05);
   const [dGain, setDGain] = useState(0.10);
@@ -13,7 +15,20 @@ export default function Settings() {
   const [tempZone2, setTempZone2] = useState(215);
   const [tempZone3, setTempZone3] = useState(210);
 
-  const { isConnected, sendCommand } = useTelemetry();
+  const [hasInitialized, setHasInitialized] = useState(false);
+
+  useEffect(() => {
+    if (telemetry && !hasInitialized) {
+      if (telemetry.set_point_1 !== undefined) setTempZone1(telemetry.set_point_1);
+      if (telemetry.set_point_2 !== undefined) setTempZone2(telemetry.set_point_2);
+      if (telemetry.set_point_3 !== undefined) setTempZone3(telemetry.set_point_3);
+      if (telemetry.motor_speed !== undefined) setMotorSpeed(Math.round(telemetry.motor_speed));
+      if (telemetry.kp !== undefined) setPGain(telemetry.kp);
+      if (telemetry.ki !== undefined) setIGain(telemetry.ki);
+      if (telemetry.kd !== undefined) setDGain(telemetry.kd);
+      setHasInitialized(true);
+    }
+  }, [telemetry, hasInitialized]);
 
   const handleApplyAndStart = () => {
     sendCommand({
@@ -37,6 +52,25 @@ export default function Settings() {
     sendCommand({
       type: "SET_MOTOR_SPEED",
       value: motorSpeed,
+      timestamp: new Date().toISOString(),
+    });
+
+    sendCommand({
+      type: "SET_PID",
+      zone: 1,
+      value: pGain,
+      timestamp: new Date().toISOString(),
+    });
+    sendCommand({
+      type: "SET_PID",
+      zone: 2,
+      value: iGain,
+      timestamp: new Date().toISOString(),
+    });
+    sendCommand({
+      type: "SET_PID",
+      zone: 3,
+      value: dGain,
       timestamp: new Date().toISOString(),
     });
 
