@@ -41,6 +41,25 @@ export default function Settings() {
     });
 
     sendCommand({
+      type: "SET_PID",
+      zone: 1,
+      value: pGain,
+      timestamp: new Date().toISOString(),
+    });
+    sendCommand({
+      type: "SET_PID",
+      zone: 2,
+      value: iGain,
+      timestamp: new Date().toISOString(),
+    });
+    sendCommand({
+      type: "SET_PID",
+      zone: 3,
+      value: dGain,
+      timestamp: new Date().toISOString(),
+    });
+
+    sendCommand({
       type: "START",
       timestamp: new Date().toISOString(),
     });

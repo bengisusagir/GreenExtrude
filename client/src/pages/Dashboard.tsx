@@ -41,17 +41,17 @@ export default function Dashboard() {
             <TemperatureGauge
               title="HEATER 1"
               temperature={telemetry?.heater_1 ?? 0}
-              setPoint={220}
+              setPoint={telemetry?.set_point_1 ?? 220}
             />
             <TemperatureGauge
               title="HEATER 2"
               temperature={telemetry?.heater_2 ?? 0}
-              setPoint={215}
+              setPoint={telemetry?.set_point_2 ?? 215}
             />
             <TemperatureGauge
               title="HEATER 3"
               temperature={telemetry?.heater_3 ?? 0}
-              setPoint={210}
+              setPoint={telemetry?.set_point_3 ?? 210}
             />
           </div>
 

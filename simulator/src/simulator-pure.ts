@@ -22,6 +22,9 @@ export interface SimState {
   motor_speed: number;
   filament_diameter: number;
   winder_speed: number;
+  set_point_1: number;
+  set_point_2: number;
+  set_point_3: number;
   running: boolean;
 }
 
@@ -32,6 +35,9 @@ export const DEFAULT_STATE: SimState = {
   motor_speed: 30,
   filament_diameter: 2.85,
   winder_speed: 25,
+  set_point_1: 220,
+  set_point_2: 215,
+  set_point_3: 210,
   running: true,
 };
 
@@ -91,6 +97,9 @@ export function generateTelemetry(
     motor_speed: Math.max(0, maybeInjectAnomaly(motor, state.motor_speed, 80, 0, randomProvider())),
     filament_diameter: Math.max(0, maybeInjectAnomaly(diameter, state.filament_diameter, 3.25, 2.5, randomProvider())),
     winder_speed: Math.max(0, maybeInjectAnomaly(winder, state.winder_speed, 70, 0, randomProvider())),
+    set_point_1: state.set_point_1,
+    set_point_2: state.set_point_2,
+    set_point_3: state.set_point_3,
     timestamp: new Date().toISOString(),
   };
 }
@@ -103,9 +112,9 @@ import type { DeviceCommand } from "../../shared/types";
  */
 export function applyCommand(state: SimState, cmd: DeviceCommand): SimState {
   const next = { ...state };
-
-  switch (cmd.type) {
-    case "SET_TEMPERATURE":
+{ next.heater_1 = cmd.value ?? next.heater_1; next.set_point_1 = cmd.value ?? next.set_point_1; }
+      if (cmd.zone === 2) { next.heater_2 = cmd.value ?? next.heater_2; next.set_point_2 = cmd.value ?? next.set_point_2; }
+      if (cmd.zone === 3) { next.heater_3 = cmd.value ?? next.heater_3; next.set_point_3 = cmd.value ?? next.set_point_3; }
       if (cmd.zone === 1) next.heater_1 = cmd.value ?? next.heater_1;
       if (cmd.zone === 2) next.heater_2 = cmd.value ?? next.heater_2;
       if (cmd.zone === 3) next.heater_3 = cmd.value ?? next.heater_3;
@@ -117,6 +126,10 @@ export function applyCommand(state: SimState, cmd: DeviceCommand): SimState {
 
     case "SET_WINDER_SPEED":
       next.winder_speed = Math.max(0, cmd.value ?? next.winder_speed);
+      break;
+
+    case "SET_PID":
+      console.log(`[SIM] PID ${cmd.zone === 1 ? "P" : cmd.zone === 2 ? "I" : "D"}-Gain set to ${cmd.value}`);
       break;
 
     case "EMERGENCY_STOP":

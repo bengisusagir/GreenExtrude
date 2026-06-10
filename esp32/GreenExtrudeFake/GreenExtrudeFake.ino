@@ -350,6 +350,12 @@ void handleCommand(char* topic, byte* payload, unsigned int length) {
     controlWinderSpeed(0);
     Serial.println("[CMD] System stopped");
 
+  } else if (strcmp(type, "SET_PID") == 0) {
+    int pidZone = doc["zone"] | 0;
+    float pidVal = doc["value"] | 0.0;
+    const char* pidLabel = pidZone == 1 ? "P" : pidZone == 2 ? "I" : "D";
+    Serial.printf("[CMD] PID %s-Gain -> %.2f\n", pidLabel, pidVal);
+
   } else {
     Serial.printf("[CMD] Unknown command: %s\n", type);
   }
