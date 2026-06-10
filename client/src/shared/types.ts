@@ -11,6 +11,9 @@ export interface TelemetryData {
   set_point_2?: number;
   set_point_3?: number;
   timestamp?: string;
+  kp?: number;
+  ki?: number;
+  kd?: number;
 }
 
 // ─── Commands: Server → Device ───

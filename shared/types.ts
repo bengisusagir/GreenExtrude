@@ -10,6 +10,9 @@ export interface TelemetryData {
   set_point_1?: number;
   set_point_2?: number;
   set_point_3?: number;
+  kp?: number;
+  ki?: number;
+  kd?: number;
   timestamp?: string;
 }
 

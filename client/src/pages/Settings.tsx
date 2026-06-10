@@ -23,6 +23,9 @@ export default function Settings() {
       if (telemetry.set_point_2 !== undefined) setTempZone2(telemetry.set_point_2);
       if (telemetry.set_point_3 !== undefined) setTempZone3(telemetry.set_point_3);
       if (telemetry.motor_speed !== undefined) setMotorSpeed(Math.round(telemetry.motor_speed));
+      if (telemetry.kp !== undefined) setPGain(telemetry.kp);
+      if (telemetry.ki !== undefined) setIGain(telemetry.ki);
+      if (telemetry.kd !== undefined) setDGain(telemetry.kd);
       setHasInitialized(true);
     }
   }, [telemetry, hasInitialized]);
