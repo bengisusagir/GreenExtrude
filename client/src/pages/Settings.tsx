@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useTelemetry } from "../context/TelemetryContext";
 import { FILAMENT_PRESETS, type FilamentDiameterPreset } from "../shared/types";
 import "./styles/Settings.sass";
-import { Slider } from "@mui/material";
+import { Slider, Snackbar, Alert } from "@mui/material";
 
 export default function Settings() {
   const { isConnected, sendCommand, telemetry } = useTelemetry();
@@ -15,6 +15,9 @@ export default function Settings() {
   const [spoolMotorSpeed, setSpoolMotorSpeed] = useState(FILAMENT_PRESETS[2.85].spool_motor_speed);
 
   const [hasInitialized, setHasInitialized] = useState(false);
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastSeverity, setToastSeverity] = useState<"success" | "error">("success");
 
   // Check if current form values mismatch the selected preset values
   const currentPresetValues = FILAMENT_PRESETS[filamentDiameter];
@@ -89,6 +92,10 @@ export default function Settings() {
       timestamp: new Date().toISOString(),
     });
 
+    setToastMessage("Extrusion parameters applied and process started.");
+    setToastSeverity("success");
+    setToastOpen(true);
+
     console.log("Applying parameters and starting extrusion:", {
       filamentDiameter,
       tempZone1,
@@ -103,6 +110,9 @@ export default function Settings() {
       type: "EMERGENCY_STOP",
       timestamp: new Date().toISOString(),
     });
+    setToastMessage("Emergency stop triggered. Process halted.");
+    setToastSeverity("error");
+    setToastOpen(true);
     console.log("Emergency stop triggered!");
   };
 
@@ -289,6 +299,26 @@ export default function Settings() {
           </button>
         </div>
       </div>
+
+      <Snackbar
+        open={toastOpen}
+        autoHideDuration={4000}
+        onClose={() => setToastOpen(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+      >
+        <Alert
+          onClose={() => setToastOpen(false)}
+          severity={toastSeverity}
+          variant="filled"
+          sx={{
+            width: "100%",
+            bgcolor: toastSeverity === "success" ? "#2ECC71" : "#EF4444",
+            color: "#FFFFFF"
+          }}
+        >
+          {toastMessage}
+        </Alert>
+      </Snackbar>
     </main>
   );
 }
