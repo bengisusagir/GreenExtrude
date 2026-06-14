@@ -10,7 +10,7 @@ import { render, screen } from "@testing-library/react";
 import Dashboard from "../../pages/Dashboard";
 
 let mockIsConnected = true;
-let mockTelemetry: Record<string, number> | null = { heater_1: 200, heater_2: 210, heater_3: 220, motor_speed: 30, filament_diameter: 2.85, winder_speed: 50 };
+let mockTelemetry: Record<string, number> | null = { heater_1: 200, heater_2: 210, screw_motor_speed: 30, filament_diameter: 2.85, spool_motor_speed: 50 };
 let mockHistory: Record<string, unknown>[] = [];
 
 vi.mock("../../context/TelemetryContext", () => ({
@@ -65,19 +65,19 @@ describe("Dashboard Page", () => {
     expect(screen.queryByText("System Offline")).not.toBeInTheDocument();
   });
 
-  it("CMP-DASH-03: renders three temperature gauges with correct set points", () => {
+  it("CMP-DASH-03: renders two temperature gauges with correct set points", () => {
     render(<Dashboard />);
     const gauges = screen.getAllByTestId("gauge");
-    expect(gauges).toHaveLength(3);
+    expect(gauges).toHaveLength(2);
     expect(gauges[0]).toHaveTextContent("HEATER 1");
     expect(gauges[1]).toHaveTextContent("HEATER 2");
-    expect(gauges[2]).toHaveTextContent("HEATER 3");
   });
 
-  it("CMP-DASH-04: renders diameter chart, motor RPM, system status, and alerts sections", () => {
+  it("CMP-DASH-04: renders diameter chart, two motor RPMs, system status, and alerts sections", () => {
     render(<Dashboard />);
     expect(screen.getByTestId("diameter-chart")).toBeInTheDocument();
-    expect(screen.getByTestId("motor-rpm")).toBeInTheDocument();
+    const motorRpms = screen.getAllByTestId("motor-rpm");
+    expect(motorRpms).toHaveLength(2);
     expect(screen.getByTestId("system-status")).toBeInTheDocument();
     expect(screen.getByTestId("alerts")).toBeInTheDocument();
   });

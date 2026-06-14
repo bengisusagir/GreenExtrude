@@ -29,10 +29,9 @@ function makeTelemetry(overrides: Partial<TelemetryData> = {}): TelemetryData {
     device_id: "esp32-ws-test",
     heater_1: 200,
     heater_2: 210,
-    heater_3: 195,
-    motor_speed: 30,
+    screw_motor_speed: 30,
     filament_diameter: 2.85,
-    winder_speed: 25,
+    spool_motor_speed: 25,
     timestamp: new Date().toISOString(),
     ...overrides,
   };

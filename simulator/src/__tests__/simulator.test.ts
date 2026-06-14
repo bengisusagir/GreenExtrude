@@ -99,10 +99,9 @@ describe("generateTelemetry", () => {
     expect(data).toHaveProperty("device_id", "esp32-simulator-01");
     expect(data).toHaveProperty("heater_1");
     expect(data).toHaveProperty("heater_2");
-    expect(data).toHaveProperty("heater_3");
-    expect(data).toHaveProperty("motor_speed");
+    expect(data).toHaveProperty("screw_motor_speed");
     expect(data).toHaveProperty("filament_diameter");
-    expect(data).toHaveProperty("winder_speed");
+    expect(data).toHaveProperty("spool_motor_speed");
     expect(data).toHaveProperty("timestamp");
   });
 
@@ -153,39 +152,33 @@ describe("applyCommand", () => {
     expect(next.heater_2).toBe(215);
   });
 
-  it("SIM-17: SET_TEMPERATURE zone 3 updates heater_3", () => {
-    const cmd: DeviceCommand = { type: "SET_TEMPERATURE", zone: 3, value: 210 };
+  it("SIM-17: SET_SCREW_MOTOR_SPEED updates screw_motor_speed", () => {
+    const cmd: DeviceCommand = { type: "SET_SCREW_MOTOR_SPEED", value: 50 };
     const next = applyCommand(DEFAULT_STATE, cmd);
-    expect(next.heater_3).toBe(210);
+    expect(next.screw_motor_speed).toBe(50);
   });
 
-  it("SIM-18: SET_TEMPERATURE with no value keeps current state", () => {
+  it("SIM-18: SET_SPOOL_MOTOR_SPEED updates spool_motor_speed", () => {
+    const cmd: DeviceCommand = { type: "SET_SPOOL_MOTOR_SPEED", value: 40 };
+    const next = applyCommand(DEFAULT_STATE, cmd);
+    expect(next.spool_motor_speed).toBe(40);
+  });
+
+  it("SIM-19: SET_TEMPERATURE with no value keeps current state", () => {
     const cmd: DeviceCommand = { type: "SET_TEMPERATURE", zone: 1 };
     const next = applyCommand(DEFAULT_STATE, cmd);
     expect(next.heater_1).toBe(DEFAULT_STATE.heater_1);
   });
 
-  it("SIM-19: SET_MOTOR_SPEED updates motor_speed", () => {
-    const cmd: DeviceCommand = { type: "SET_MOTOR_SPEED", value: 50 };
-    const next = applyCommand(DEFAULT_STATE, cmd);
-    expect(next.motor_speed).toBe(50);
-  });
-
-  it("SIM-20: SET_WINDER_SPEED updates winder_speed", () => {
-    const cmd: DeviceCommand = { type: "SET_WINDER_SPEED", value: 40 };
-    const next = applyCommand(DEFAULT_STATE, cmd);
-    expect(next.winder_speed).toBe(40);
-  });
-
-  it("SIM-21: EMERGENCY_STOP halts everything", () => {
+  it("SIM-20: EMERGENCY_STOP halts everything", () => {
     const cmd: DeviceCommand = { type: "EMERGENCY_STOP" };
     const next = applyCommand(DEFAULT_STATE, cmd);
     expect(next.running).toBe(false);
-    expect(next.motor_speed).toBe(0);
-    expect(next.winder_speed).toBe(0);
+    expect(next.screw_motor_speed).toBe(0);
+    expect(next.spool_motor_speed).toBe(0);
   });
 
-  it("SIM-22: START resumes running and resets motor/winder defaults", () => {
+  it("SIM-21: START resumes running and resets motor defaults", () => {
     // First stop
     const stopped = applyCommand(DEFAULT_STATE, { type: "EMERGENCY_STOP" });
     expect(stopped.running).toBe(false);
@@ -193,17 +186,17 @@ describe("applyCommand", () => {
     const cmd: DeviceCommand = { type: "START" };
     const next = applyCommand(stopped, cmd);
     expect(next.running).toBe(true);
-    expect(next.motor_speed).toBe(30);
-    expect(next.winder_speed).toBe(25);
+    expect(next.screw_motor_speed).toBe(30);
+    expect(next.spool_motor_speed).toBe(25);
   });
 
-  it("SIM-23: STOP sets running to false and zeros motors (safety)", () => {
+  it("SIM-22: STOP sets running to false and zeros motors (safety)", () => {
     const cmd: DeviceCommand = { type: "STOP" };
     const next = applyCommand(DEFAULT_STATE, cmd);
     expect(next.running).toBe(false);
-    // SAFETY: Stopped machine must not have spinning motors/winder
-    expect(next.motor_speed).toBe(0);
-    expect(next.winder_speed).toBe(0);
+    // SAFETY: Stopped machine must not have spinning motors
+    expect(next.screw_motor_speed).toBe(0);
+    expect(next.spool_motor_speed).toBe(0);
   });
 
   it("SIM-24: unknown command type returns state unchanged", () => {
@@ -218,23 +211,22 @@ describe("applyCommand", () => {
     expect(DEFAULT_STATE).toEqual(original);
   });
 
-  it("SIM-26: SET_TEMPERATURE with invalid zone (e.g. 4) does not change any heater", () => {
+  it("SIM-23: SET_TEMPERATURE with invalid zone (e.g. 4) does not change any heater", () => {
     const cmd: DeviceCommand = { type: "SET_TEMPERATURE", zone: 4, value: 999 };
     const next = applyCommand(DEFAULT_STATE, cmd);
     expect(next.heater_1).toBe(DEFAULT_STATE.heater_1);
     expect(next.heater_2).toBe(DEFAULT_STATE.heater_2);
-    expect(next.heater_3).toBe(DEFAULT_STATE.heater_3);
   });
 
-  it("SIM-27: sequential commands compose correctly", () => {
+  it("SIM-24: sequential commands compose correctly", () => {
     let state = { ...DEFAULT_STATE };
     state = applyCommand(state, { type: "SET_TEMPERATURE", zone: 1, value: 220 });
-    state = applyCommand(state, { type: "SET_MOTOR_SPEED", value: 45 });
+    state = applyCommand(state, { type: "SET_SCREW_MOTOR_SPEED", value: 45 });
     state = applyCommand(state, { type: "EMERGENCY_STOP" });
     state = applyCommand(state, { type: "START" });
 
     expect(state.running).toBe(true);
-    expect(state.motor_speed).toBe(30); // reset by START
+    expect(state.screw_motor_speed).toBe(30); // reset by START
     expect(state.heater_1).toBe(220); // preserved through EMERGENCY_STOP
   });
 });

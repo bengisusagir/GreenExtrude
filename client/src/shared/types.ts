@@ -3,32 +3,26 @@ export interface TelemetryData {
   device_id: string;
   heater_1: number;
   heater_2: number;
-  heater_3: number;
-  motor_speed: number;
+  screw_motor_speed: number;
   filament_diameter: number;
-  winder_speed: number;
+  spool_motor_speed: number;
   set_point_1?: number;
   set_point_2?: number;
-  set_point_3?: number;
   timestamp?: string;
-  kp?: number;
-  ki?: number;
-  kd?: number;
 }
 
 // ─── Commands: Server → Device ───
 export type CommandType =
   | "SET_TEMPERATURE"
-  | "SET_MOTOR_SPEED"
-  | "SET_WINDER_SPEED"
-  | "SET_PID"
+  | "SET_SCREW_MOTOR_SPEED"
+  | "SET_SPOOL_MOTOR_SPEED"
   | "EMERGENCY_STOP"
   | "START"
   | "STOP";
 
 export interface DeviceCommand {
   type: CommandType;
-  zone?: number;       // which heating zone (1, 2, 3)
+  zone?: number;       // which heating zone (1, 2)
   value?: number;      // target value
   timestamp?: string;
 }
@@ -56,6 +50,31 @@ export const MQTT_TOPICS = {
   COMMAND: "greenextrude/command",
   STATUS: "greenextrude/status",
 } as const;
+
+// ─── Filament Presets ───
+export type FilamentDiameterPreset = 2.85 | 1.75;
+
+export interface FilamentPresetValues {
+  set_point_1: number;
+  set_point_2: number;
+  screw_motor_speed: number;
+  spool_motor_speed: number;
+}
+
+export const FILAMENT_PRESETS: Record<FilamentDiameterPreset, FilamentPresetValues> = {
+  2.85: {
+    set_point_1: 220,
+    set_point_2: 215,
+    screw_motor_speed: 45,
+    spool_motor_speed: 25,
+  },
+  1.75: {
+    set_point_1: 200,
+    set_point_2: 195,
+    screw_motor_speed: 35,
+    spool_motor_speed: 20,
+  },
+};
 
 // ─── Sensor Thresholds ───
 export const SENSOR_THRESHOLDS = {

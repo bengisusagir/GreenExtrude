@@ -31,40 +31,36 @@ const normalData: TelemetryData = {
   device_id: "esp32-001",
   heater_1: 210,
   heater_2: 210,
-  heater_3: 210,
-  motor_speed: 30,
+  screw_motor_speed: 30,
   filament_diameter: 2.85,
-  winder_speed: 25,
+  spool_motor_speed: 25,
 };
 
 const warningData: TelemetryData = {
   device_id: "esp32-002",
   heater_1: 220,
   heater_2: 220,
-  heater_3: 220,
-  motor_speed: 35,
+  screw_motor_speed: 35,
   filament_diameter: 2.79,
-  winder_speed: 28,
+  spool_motor_speed: 28,
 };
 
 const dangerData: TelemetryData = {
   device_id: "esp32-003",
   heater_1: 235,
   heater_2: 235,
-  heater_3: 235,
-  motor_speed: 40,
+  screw_motor_speed: 40,
   filament_diameter: 2.65,
-  winder_speed: 30,
+  spool_motor_speed: 30,
 };
 
 const edgeData: TelemetryData = {
   device_id: "esp32-000",
   heater_1: 0,
   heater_2: 0,
-  heater_3: 0,
-  motor_speed: 0,
+  screw_motor_speed: 0,
   filament_diameter: 0,
-  winder_speed: 0,
+  spool_motor_speed: 0,
 };
 
 async function getFreshModule() {
@@ -112,10 +108,9 @@ describe("initDatabase()", () => {
     expect(columnNames).toContain("timestamp");
     expect(columnNames).toContain("heater_1");
     expect(columnNames).toContain("heater_2");
-    expect(columnNames).toContain("heater_3");
-    expect(columnNames).toContain("motor_speed");
+    expect(columnNames).toContain("screw_motor_speed");
     expect(columnNames).toContain("filament_diameter");
-    expect(columnNames).toContain("winder_speed");
+    expect(columnNames).toContain("spool_motor_speed");
     expect(columnNames).toContain("device_id");
 
     const idCol = columns.find((c) => c.name === "id")!;
@@ -196,10 +191,9 @@ describe("insertTelemetry()", () => {
     expect(row.device_id).toBe("esp32-001");
     expect(row.heater_1).toBe(210);
     expect(row.heater_2).toBe(210);
-    expect(row.heater_3).toBe(210);
-    expect(row.motor_speed).toBe(30);
+    expect(row.screw_motor_speed).toBe(30);
     expect(row.filament_diameter).toBe(2.85);
-    expect(row.winder_speed).toBe(25);
+    expect(row.spool_motor_speed).toBe(25);
   });
 
   it("verifies the inserted row is retrievable via raw SQL SELECT", async () => {
@@ -224,10 +218,9 @@ describe("insertTelemetry()", () => {
       device_id: "esp32-partial",
       heater_1: undefined as any,
       heater_2: undefined as any,
-      heater_3: undefined as any,
-      motor_speed: undefined as any,
+      screw_motor_speed: undefined as any,
       filament_diameter: undefined as any,
-      winder_speed: undefined as any,
+      spool_motor_speed: undefined as any,
     };
 
     insertTelemetry(partialData);
@@ -239,10 +232,9 @@ describe("insertTelemetry()", () => {
 
     expect(row.heater_1).toBeNull();
     expect(row.heater_2).toBeNull();
-    expect(row.heater_3).toBeNull();
-    expect(row.motor_speed).toBeNull();
+    expect(row.screw_motor_speed).toBeNull();
     expect(row.filament_diameter).toBeNull();
-    expect(row.winder_speed).toBeNull();
+    expect(row.spool_motor_speed).toBeNull();
   });
 
   it("inserts multiple records and verifies row count matches", async () => {
@@ -266,10 +258,9 @@ describe("insertTelemetry()", () => {
       device_id: "esp32-precise",
       heater_1: 210.123,
       heater_2: 215.456,
-      heater_3: 220.789,
-      motor_speed: 30.001,
+      screw_motor_speed: 30.001,
       filament_diameter: 2.847,
-      winder_speed: 25.999,
+      spool_motor_speed: 25.999,
     };
 
     insertTelemetry(preciseData);
@@ -281,10 +272,9 @@ describe("insertTelemetry()", () => {
 
     expect(row.heater_1).toBeCloseTo(210.123, 3);
     expect(row.heater_2).toBeCloseTo(215.456, 3);
-    expect(row.heater_3).toBeCloseTo(220.789, 3);
-    expect(row.motor_speed).toBeCloseTo(30.001, 3);
+    expect(row.screw_motor_speed).toBeCloseTo(30.001, 3);
     expect(row.filament_diameter).toBeCloseTo(2.847, 3);
-    expect(row.winder_speed).toBeCloseTo(25.999, 3);
+    expect(row.spool_motor_speed).toBeCloseTo(25.999, 3);
   });
 
   it("defaults device_id to 'unknown' when not provided", async () => {
@@ -295,10 +285,9 @@ describe("insertTelemetry()", () => {
       device_id: undefined as any,
       heater_1: 210,
       heater_2: 210,
-      heater_3: 210,
-      motor_speed: 30,
+      screw_motor_speed: 30,
       filament_diameter: 2.85,
-      winder_speed: 25,
+      spool_motor_speed: 25,
     };
 
     insertTelemetry(noDeviceData);
@@ -379,19 +368,17 @@ describe("getRecentTelemetry()", () => {
     expect(record).toHaveProperty("device_id");
     expect(record).toHaveProperty("heater_1");
     expect(record).toHaveProperty("heater_2");
-    expect(record).toHaveProperty("heater_3");
-    expect(record).toHaveProperty("motor_speed");
+    expect(record).toHaveProperty("screw_motor_speed");
     expect(record).toHaveProperty("filament_diameter");
-    expect(record).toHaveProperty("winder_speed");
+    expect(record).toHaveProperty("spool_motor_speed");
     expect(record).toHaveProperty("timestamp");
 
     expect(record.device_id).toBe("esp32-001");
     expect(record.heater_1).toBe(210);
     expect(record.heater_2).toBe(210);
-    expect(record.heater_3).toBe(210);
-    expect(record.motor_speed).toBe(30);
+    expect(record.screw_motor_speed).toBe(30);
     expect(record.filament_diameter).toBe(2.85);
-    expect(record.winder_speed).toBe(25);
+    expect(record.spool_motor_speed).toBe(25);
   });
 
   it("populates timestamp as a valid ISO-like datetime string", async () => {
@@ -432,10 +419,9 @@ describe("Edge Cases & Data Integrity", () => {
       device_id: "esp32-extreme",
       heater_1: 999,
       heater_2: 999,
-      heater_3: 999,
-      motor_speed: 999,
+      screw_motor_speed: 999,
       filament_diameter: 0.01,
-      winder_speed: 999,
+      spool_motor_speed: 999,
     };
 
     expect(() => insertTelemetry(extremeData)).not.toThrow();
@@ -453,17 +439,16 @@ describe("Edge Cases & Data Integrity", () => {
       device_id: "esp32-negative",
       heater_1: -40,
       heater_2: -40,
-      heater_3: -40,
-      motor_speed: -10,
+      screw_motor_speed: -10,
       filament_diameter: -1.5,
-      winder_speed: -5,
+      spool_motor_speed: -5,
     };
 
     expect(() => insertTelemetry(negativeData)).not.toThrow();
 
     const results = getRecentTelemetry(1);
     expect(results[0].heater_1).toBe(-40);
-    expect(results[0].motor_speed).toBe(-10);
+    expect(results[0].screw_motor_speed).toBe(-10);
     expect(results[0].filament_diameter).toBe(-1.5);
   });
 
@@ -495,7 +480,7 @@ describe("Edge Cases & Data Integrity", () => {
     }
 
     const results = getRecentTelemetry(100);
-    expect(results).toHaveLength(100);
+    expect(results).toHaveLength(50);
     expect(results[0].device_id).toBe("esp32-seq-49");
     expect(results[49].device_id).toBe("esp32-seq-0");
   });
@@ -512,10 +497,9 @@ describe("Edge Cases & Data Integrity", () => {
     expect(typeof record.device_id).toBe("string");
     expect(typeof record.heater_1).toBe("number");
     expect(typeof record.heater_2).toBe("number");
-    expect(typeof record.heater_3).toBe("number");
-    expect(typeof record.motor_speed).toBe("number");
+    expect(typeof record.screw_motor_speed).toBe("number");
     expect(typeof record.filament_diameter).toBe("number");
-    expect(typeof record.winder_speed).toBe("number");
+    expect(typeof record.spool_motor_speed).toBe("number");
     expect(typeof record.timestamp).toBe("string");
   });
 
@@ -530,10 +514,9 @@ describe("Edge Cases & Data Integrity", () => {
 
     expect(record.heater_1).toBe(0);
     expect(record.heater_2).toBe(0);
-    expect(record.heater_3).toBe(0);
-    expect(record.motor_speed).toBe(0);
+    expect(record.screw_motor_speed).toBe(0);
     expect(record.filament_diameter).toBe(0);
-    expect(record.winder_speed).toBe(0);
+    expect(record.spool_motor_speed).toBe(0);
   });
 
   it("auto-incrementing id is unique across inserts", async () => {

@@ -48,11 +48,6 @@ export default function Dashboard() {
               temperature={telemetry?.heater_2 ?? 0}
               setPoint={telemetry?.set_point_2 ?? 215}
             />
-            <TemperatureGauge
-              title="HEATER 3"
-              temperature={telemetry?.heater_3 ?? 0}
-              setPoint={telemetry?.set_point_3 ?? 210}
-            />
           </div>
 
           <div className="dashboard__chart-row">
@@ -66,7 +61,10 @@ export default function Dashboard() {
 
         <div className="dashboard__right-column">
           <div className="dashboard__motor-rpm-row">
-            <MotorRPMSlider rpm={telemetry?.motor_speed ?? 0} />
+            <MotorRPMSlider rpm={telemetry?.screw_motor_speed ?? 0} title="SCREW MOTOR RPM" />
+          </div>
+          <div className="dashboard__motor-rpm-row">
+            <MotorRPMSlider rpm={telemetry?.spool_motor_speed ?? 0} title="SPOOL MOTOR RPM" />
           </div>
 
           <div className="dashboard__system-status-row">

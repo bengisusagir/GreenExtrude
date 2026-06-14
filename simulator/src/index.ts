@@ -14,13 +14,11 @@ const PUBLISH_INTERVAL_MS = 1000; // send data every 1 second
 let state = {
   heater_1: 180, // °C — feed zone
   heater_2: 200, // °C — melt zone
-  heater_3: 195, // °C — nozzle zone
-  motor_speed: 30,        // RPM
-  filament_diameter: 2.85, // mm
-  winder_speed: 25,       // RPM
+  screw_motor_speed: 30,   // RPM
+  filament_diameter: 2.85,  // mm
+  spool_motor_speed: 25,    // RPM
   set_point_1: 220,
   set_point_2: 215,
-  set_point_3: 210,
   running: true,
 };
 
@@ -43,22 +41,19 @@ function maybeInjectAnomaly(value: number, normal: number, spikeHigh: number, sp
 function generateTelemetry(): TelemetryData {
   const temp1 = addNoise(state.heater_1, 3);
   const temp2 = addNoise(state.heater_2, 2);
-  const temp3 = addNoise(state.heater_3, 2.5);
-  const motor = addNoise(state.motor_speed, 1);
+  const screwMotor = addNoise(state.screw_motor_speed, 1);
   const diameter = addNoise(state.filament_diameter, 0.08);
-  const winder = addNoise(state.winder_speed, 0.5);
+  const spoolMotor = addNoise(state.spool_motor_speed, 0.5);
 
   return {
     device_id: DEVICE_ID,
     heater_1: maybeInjectAnomaly(temp1, state.heater_1, 245, 50),
     heater_2: maybeInjectAnomaly(temp2, state.heater_2, 250, 40),
-    heater_3: maybeInjectAnomaly(temp3, state.heater_3, 240, 55),
-    motor_speed: maybeInjectAnomaly(motor, state.motor_speed, 80, 0),
+    screw_motor_speed: maybeInjectAnomaly(screwMotor, state.screw_motor_speed, 80, 0),
     filament_diameter: maybeInjectAnomaly(diameter, state.filament_diameter, 3.25, 2.50),
-    winder_speed: maybeInjectAnomaly(winder, state.winder_speed, 70, 0),
+    spool_motor_speed: maybeInjectAnomaly(spoolMotor, state.spool_motor_speed, 70, 0),
     set_point_1: state.set_point_1,
     set_point_2: state.set_point_2,
-    set_point_3: state.set_point_3,
     timestamp: new Date().toISOString(),
   };
 }
@@ -93,7 +88,7 @@ client.on("connect", () => {
     const payload = JSON.stringify(data);
     client.publish(MQTT_TOPICS.TELEMETRY, payload);
     console.log(
-      `[SIM] → ${data.heater_1}/${data.heater_2}/${data.heater_3}°C | motor: ${data.motor_speed} RPM | ⌀ ${data.filament_diameter}mm`
+      `[SIM] → ${data.heater_1}/${data.heater_2}°C | screw: ${data.screw_motor_speed} RPM | spool: ${data.spool_motor_speed} RPM | ⌀ ${data.filament_diameter}mm`
     );
   }, PUBLISH_INTERVAL_MS);
 });
@@ -108,35 +103,30 @@ client.on("message", (_topic: string, message: Buffer) => {
       case "SET_TEMPERATURE":
         if (cmd.zone === 1) { state.heater_1 = cmd.value ?? state.heater_1; state.set_point_1 = cmd.value ?? state.set_point_1; }
         if (cmd.zone === 2) { state.heater_2 = cmd.value ?? state.heater_2; state.set_point_2 = cmd.value ?? state.set_point_2; }
-        if (cmd.zone === 3) { state.heater_3 = cmd.value ?? state.heater_3; state.set_point_3 = cmd.value ?? state.set_point_3; }
         console.log(`[SIM] Heater ${cmd.zone} set to ${cmd.value}°C`);
         break;
 
-      case "SET_MOTOR_SPEED":
-        state.motor_speed = cmd.value ?? state.motor_speed;
-        console.log(`[SIM] Motor speed set to ${cmd.value} RPM`);
+      case "SET_SCREW_MOTOR_SPEED":
+        state.screw_motor_speed = cmd.value ?? state.screw_motor_speed;
+        console.log(`[SIM] Screw motor speed set to ${cmd.value} RPM`);
         break;
 
-      case "SET_WINDER_SPEED":
-        state.winder_speed = cmd.value ?? state.winder_speed;
-        console.log(`[SIM] Winder speed set to ${cmd.value} RPM`);
-        break;
-
-      case "SET_PID":
-        console.log(`[SIM] PID ${cmd.zone === 1 ? "P" : cmd.zone === 2 ? "I" : "D"}-Gain set to ${cmd.value}`);
+      case "SET_SPOOL_MOTOR_SPEED":
+        state.spool_motor_speed = cmd.value ?? state.spool_motor_speed;
+        console.log(`[SIM] Spool motor speed set to ${cmd.value} RPM`);
         break;
 
       case "EMERGENCY_STOP":
         state.running = false;
-        state.motor_speed = 0;
-        state.winder_speed = 0;
+        state.screw_motor_speed = 0;
+        state.spool_motor_speed = 0;
         console.log("[SIM] ⚠ EMERGENCY STOP — all motors halted");
         break;
 
       case "START":
         state.running = true;
-        state.motor_speed = 30;
-        state.winder_speed = 25;
+        state.screw_motor_speed = 30;
+        state.spool_motor_speed = 25;
         console.log("[SIM] System started");
         break;
 

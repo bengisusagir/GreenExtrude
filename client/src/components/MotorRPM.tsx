@@ -3,17 +3,17 @@ import "./styles/MotorRPM.sass";
 
 interface MotorRPMProps {
   rpm?: number;
-  onSpeedChange?: (speed: number) => void;
+  title?: string;
 }
 
-export default function MotorRPM({ rpm }: MotorRPMProps) {
+export default function MotorRPM({ rpm, title = "EXTRUDER MOTOR RPM" }: MotorRPMProps) {
 
   return (
     <div className="motor-rpm-slider glass-card">
       <div className="motor-rpm-slider__header">
         <div className="motor-rpm-slider__title-wrapper">
           <div className="motor-rpm-slider__title-bar"></div>
-          <h3 className="motor-rpm-slider__title">EXTRUDER MOTOR RPM</h3>
+          <h3 className="motor-rpm-slider__title">{title}</h3>
         </div>
         <svg
             className="motor-rpm-slider__icon"

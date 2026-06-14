@@ -57,10 +57,9 @@ function makeTelemetry(overrides: Partial<TelemetryData> = {}): TelemetryData {
     device_id: "esp32-test",
     heater_1: 200,
     heater_2: 205,
-    heater_3: 190,
-    motor_speed: 30,
+    screw_motor_speed: 30,
     filament_diameter: 2.85,
-    winder_speed: 25,
+    spool_motor_speed: 25,
     timestamp: new Date().toISOString(),
     ...overrides,
   };
@@ -120,7 +119,7 @@ describe("useAlerts", () => {
 
   it("ALR-04: does NOT generate temperature alert for normal values", () => {
     const { result } = renderHook(() => useAlerts(), { wrapper: Wrapper });
-    pushTelemetry(makeTelemetry({ heater_1: 200, heater_2: 205, heater_3: 190 }));
+    pushTelemetry(makeTelemetry({ heater_1: 200, heater_2: 205 }));
 
     const tempAlerts = result.current.filter((a) => a.message.includes("temperature"));
     expect(tempAlerts).toHaveLength(0);
@@ -165,9 +164,9 @@ describe("useAlerts", () => {
   // Motor & Winder Alerts
   // ═══════════════════════════════════════════════════════════════════════
 
-  it("ALR-08: generates danger alert when motor_speed = 0 (stall)", () => {
+  it("ALR-08: generates danger alert when screw_motor_speed = 0 (stall)", () => {
     const { result } = renderHook(() => useAlerts(), { wrapper: Wrapper });
-    pushTelemetry(makeTelemetry({ motor_speed: 0 }));
+    pushTelemetry(makeTelemetry({ screw_motor_speed: 0 }));
 
     const stallAlerts = result.current.filter(
       (a) => a.type === "danger" && a.message.includes("stall")
@@ -175,34 +174,34 @@ describe("useAlerts", () => {
     expect(stallAlerts.length).toBeGreaterThanOrEqual(1);
   });
 
-  it("ALR-09: generates warning alert when motor_speed > 60", () => {
+  it("ALR-09: generates warning alert when screw_motor_speed > 60", () => {
     const { result } = renderHook(() => useAlerts(), { wrapper: Wrapper });
-    pushTelemetry(makeTelemetry({ motor_speed: 65 }));
+    pushTelemetry(makeTelemetry({ screw_motor_speed: 65 }));
 
     const motorAlerts = result.current.filter(
-      (a) => a.type === "warning" && a.message.includes("Motor") && a.message.includes("high")
+      (a) => a.type === "warning" && a.message.includes("motor") && a.message.includes("high")
     );
     expect(motorAlerts.length).toBeGreaterThanOrEqual(1);
   });
 
-  it("ALR-10: generates warning alert when winder_speed = 0", () => {
+  it("ALR-10: generates warning alert when spool_motor_speed = 0", () => {
     const { result } = renderHook(() => useAlerts(), { wrapper: Wrapper });
-    pushTelemetry(makeTelemetry({ winder_speed: 0 }));
+    pushTelemetry(makeTelemetry({ spool_motor_speed: 0 }));
 
-    const winderAlerts = result.current.filter(
-      (a) => a.type === "warning" && a.message.includes("Winder")
+    const spoolAlerts = result.current.filter(
+      (a) => a.type === "warning" && a.message.includes("Spool")
     );
-    expect(winderAlerts.length).toBeGreaterThanOrEqual(1);
+    expect(spoolAlerts.length).toBeGreaterThanOrEqual(1);
   });
 
-  it("ALR-11: generates warning alert when winder_speed > 55", () => {
+  it("ALR-11: generates warning alert when spool_motor_speed > 55", () => {
     const { result } = renderHook(() => useAlerts(), { wrapper: Wrapper });
-    pushTelemetry(makeTelemetry({ winder_speed: 60 }));
+    pushTelemetry(makeTelemetry({ spool_motor_speed: 60 }));
 
-    const winderAlerts = result.current.filter(
-      (a) => a.type === "warning" && a.message.includes("Winder") && a.message.includes("high")
+    const spoolAlerts = result.current.filter(
+      (a) => a.type === "warning" && a.message.includes("Spool") && a.message.includes("high")
     );
-    expect(winderAlerts.length).toBeGreaterThanOrEqual(1);
+    expect(spoolAlerts.length).toBeGreaterThanOrEqual(1);
   });
 
   // ═══════════════════════════════════════════════════════════════════════

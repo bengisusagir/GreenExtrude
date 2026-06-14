@@ -38,34 +38,24 @@
 
 // ─── Simulated System State ───
 struct SimState {
-  float heater_1;        // °C — feed zone
-  float heater_2;        // °C — melt zone
-  float heater_3;        // °C — nozzle zone
-  float motor_speed;     // RPM
-  float filament_dia;    // mm
-  float winder_speed;    // RPM
+  float heater_1;         // °C — feed zone
+  float heater_2;         // °C — melt zone
+  float screw_motor_speed; // RPM
+  float filament_dia;     // mm
+  float spool_motor_speed; // RPM
   float set_point_1;
   float set_point_2;
-  float set_point_3;
-  float kp;
-  float ki;
-  float kd;
   bool  running;
 };
 
 SimState state = {
   180.0,   // heater_1
   200.0,   // heater_2
-  195.0,   // heater_3
-  30.0,    // motor_speed
+  30.0,    // screw_motor_speed
   2.85,    // filament_dia
-  25.0,    // winder_speed
+  25.0,    // spool_motor_speed
   220.0,   // set_point_1
   215.0,   // set_point_2
-  210.0,   // set_point_3
-  1.20,    // kp
-  0.05,    // ki
-  0.10,    // kd
   true     // running
 };
 
@@ -73,16 +63,11 @@ SimState state = {
 struct BufferedTelemetry {
   float heater_1;
   float heater_2;
-  float heater_3;
-  float motor_speed;
+  float screw_motor_speed;
   float filament_diameter;
-  float winder_speed;
+  float spool_motor_speed;
   float set_point_1;
   float set_point_2;
-  float set_point_3;
-  float kp;
-  float ki;
-  float kd;
   unsigned long timestamp_ms;
 };
 
@@ -155,26 +140,21 @@ void initHardware() {
 float readHeaterTemperature(int zone) {
 #if USE_REAL_SENSORS
   // TODO: Implement physical temperature reading here (e.g., thermocouple)
-  // Example:
-  // if (zone == 1) return thermocouple1.readCelsius();
-  // if (zone == 2) return thermocouple2.readCelsius();
-  // if (zone == 3) return thermocouple3.readCelsius();
   return 0.0;
 #else
   // Simulated data with noise and occasional anomalies
   if (zone == 1) return maybeAnomaly(addNoise(state.heater_1, 3.0), state.heater_1, 245, 50);
   if (zone == 2) return maybeAnomaly(addNoise(state.heater_2, 2.0), state.heater_2, 250, 40);
-  if (zone == 3) return maybeAnomaly(addNoise(state.heater_3, 2.5), state.heater_3, 240, 55);
   return 0.0;
 #endif
 }
 
-float readMotorSpeed() {
+float readScrewMotorSpeed() {
 #if USE_REAL_SENSORS
-  // TODO: Read extruder motor speed using an encoder or Hall effect sensor
+  // TODO: Read extruder screw motor speed using an encoder or Hall effect sensor
   return 0.0;
 #else
-  return maybeAnomaly(addNoise(state.motor_speed, 1.0), state.motor_speed, 80, 0);
+  return maybeAnomaly(addNoise(state.screw_motor_speed, 1.0), state.screw_motor_speed, 80, 0);
 #endif
 }
 
@@ -183,19 +163,19 @@ float readFilamentDiameter() {
   // TODO: Read physical filament diameter sensor value
   return 0.0;
 #else
-  if (state.motor_speed <= 0) {
+  if (state.screw_motor_speed <= 0) {
     return 0.0;
   }
   return maybeAnomaly(addNoise(state.filament_dia, 0.08), state.filament_dia, 3.25, 2.50);
 #endif
 }
 
-float readWinderSpeed() {
+float readSpoolMotorSpeed() {
 #if USE_REAL_SENSORS
-  // TODO: Read winder motor speed using an encoder
+  // TODO: Read spool winder motor speed using an encoder
   return 0.0;
 #else
-  return maybeAnomaly(addNoise(state.winder_speed, 0.5), state.winder_speed, 70, 0);
+  return maybeAnomaly(addNoise(state.spool_motor_speed, 0.5), state.spool_motor_speed, 70, 0);
 #endif
 }
 
@@ -207,24 +187,23 @@ void controlHeater(int zone, float targetValue) {
 #else
   if (zone == 1) state.heater_1 = targetValue;
   if (zone == 2) state.heater_2 = targetValue;
-  if (zone == 3) state.heater_3 = targetValue;
 #endif
 }
 
-void controlMotorSpeed(float speedValue) {
+void controlScrewMotorSpeed(float speedValue) {
 #if USE_REAL_SENSORS
-  // TODO: Output speed control command to physical motor driver (e.g., PWM, analogWrite)
+  // TODO: Output speed control command to physical screw motor driver (e.g., PWM, analogWrite)
 #else
-  state.motor_speed = speedValue;
+  state.screw_motor_speed = speedValue;
   state.filament_dia = (speedValue > 0) ? 2.85f : 0.0f;
 #endif
 }
 
-void controlWinderSpeed(float speedValue) {
+void controlSpoolMotorSpeed(float speedValue) {
 #if USE_REAL_SENSORS
-  // TODO: Output speed control command to physical winder motor driver
+  // TODO: Output speed control command to physical spool motor driver
 #else
-  state.winder_speed = speedValue;
+  state.spool_motor_speed = speedValue;
 #endif
 }
 
@@ -233,8 +212,8 @@ void executeEmergencyStop() {
   // TODO: Implement physical emergency stop logic (immediately shut off all heaters and motors)
 #else
   state.running = false;
-  state.motor_speed = 0;
-  state.winder_speed = 0;
+  state.screw_motor_speed = 0;
+  state.spool_motor_speed = 0;
 #endif
 }
 
@@ -292,16 +271,11 @@ void publishTelemetry(BufferedTelemetry data) {
   doc["device_id"]          = DEVICE_ID;
   doc["heater_1"]           = round(data.heater_1 * 100) / 100.0;
   doc["heater_2"]           = round(data.heater_2 * 100) / 100.0;
-  doc["heater_3"]           = round(data.heater_3 * 100) / 100.0;
-  doc["motor_speed"]        = round(data.motor_speed * 100) / 100.0;
+  doc["screw_motor_speed"]  = round(data.screw_motor_speed * 100) / 100.0;
   doc["filament_diameter"]  = round(data.filament_diameter * 100) / 100.0;
-  doc["winder_speed"]       = round(data.winder_speed * 100) / 100.0;
+  doc["spool_motor_speed"]  = round(data.spool_motor_speed * 100) / 100.0;
   doc["set_point_1"]        = round(data.set_point_1 * 100) / 100.0;
   doc["set_point_2"]        = round(data.set_point_2 * 100) / 100.0;
-  doc["set_point_3"]        = round(data.set_point_3 * 100) / 100.0;
-  doc["kp"]                 = round(data.kp * 100) / 100.0;
-  doc["ki"]                 = round(data.ki * 100) / 100.0;
-  doc["kd"]                 = round(data.kd * 100) / 100.0;
 
   // Preserve generation time by converting timestamp_ms into ISO 8601 format
   char ts[25];
@@ -318,9 +292,9 @@ void publishTelemetry(BufferedTelemetry data) {
   bool isHistorical = (millis() - data.timestamp_ms > 2000);
   if (mqtt.publish(TOPIC_TELEMETRY, payload)) {
     lastSuccessfulPublishMs = millis();
-    Serial.printf("[TX%s] t1=%.1f t2=%.1f t3=%.1f | motor=%.0f | dia=%.2f | winder=%.0f\n",
+    Serial.printf("[TX%s] t1=%.1f t2=%.1f | screw=%.0f | dia=%.2f | spool=%.0f\n",
                   isHistorical ? "-OFFLINE" : "",
-                  data.heater_1, data.heater_2, data.heater_3, data.motor_speed, data.filament_diameter, data.winder_speed);
+                  data.heater_1, data.heater_2, data.screw_motor_speed, data.filament_diameter, data.spool_motor_speed);
   } else {
     Serial.println("[TX] Transmission FAILED!");
   }
@@ -355,25 +329,24 @@ void handleCommand(char* topic, byte* payload, unsigned int length) {
     preferences.begin("extrude", false);
     if (zone == 1) { state.set_point_1 = val; preferences.putFloat("sp_1", val); }
     if (zone == 2) { state.set_point_2 = val; preferences.putFloat("sp_2", val); }
-    if (zone == 3) { state.set_point_3 = val; preferences.putFloat("sp_3", val); }
     preferences.end();
     Serial.printf("[CMD] Heater %d target temperature -> %.1f C\n", zone, val);
 
-  } else if (strcmp(type, "SET_MOTOR_SPEED") == 0) {
+  } else if (strcmp(type, "SET_SCREW_MOTOR_SPEED") == 0) {
     float val = doc["value"] | 0.0;
-    controlMotorSpeed(val);
+    controlScrewMotorSpeed(val);
     preferences.begin("extrude", false);
-    preferences.putFloat("m_spd", val);
+    preferences.putFloat("screw_spd", val);
     preferences.end();
-    Serial.printf("[CMD] Extruder motor target speed -> %.0f RPM\n", val);
+    Serial.printf("[CMD] Screw motor target speed -> %.0f RPM\n", val);
 
-  } else if (strcmp(type, "SET_WINDER_SPEED") == 0) {
+  } else if (strcmp(type, "SET_SPOOL_MOTOR_SPEED") == 0) {
     float val = doc["value"] | 0.0;
-    controlWinderSpeed(val);
+    controlSpoolMotorSpeed(val);
     preferences.begin("extrude", false);
-    preferences.putFloat("w_spd", val);
+    preferences.putFloat("spool_spd", val);
     preferences.end();
-    Serial.printf("[CMD] Winder target speed -> %.0f RPM\n", val);
+    Serial.printf("[CMD] Spool motor target speed -> %.0f RPM\n", val);
 
   } else if (strcmp(type, "EMERGENCY_STOP") == 0) {
     executeEmergencyStop();
@@ -382,29 +355,18 @@ void handleCommand(char* topic, byte* payload, unsigned int length) {
   } else if (strcmp(type, "START") == 0) {
     state.running = true;
     preferences.begin("extrude", true);
-    float savedMotor = preferences.getFloat("m_spd", 0.0f);
-    float savedWinder = preferences.getFloat("w_spd", 0.0f);
+    float savedScrew = preferences.getFloat("screw_spd", 0.0f);
+    float savedSpool = preferences.getFloat("spool_spd", 0.0f);
     preferences.end();
-    controlMotorSpeed(savedMotor);
-    controlWinderSpeed(savedWinder);
-    Serial.printf("[CMD] System started. Resumed motor=%.0f RPM, winder=%.0f RPM\n", savedMotor, savedWinder);
+    controlScrewMotorSpeed(savedScrew);
+    controlSpoolMotorSpeed(savedSpool);
+    Serial.printf("[CMD] System started. Resumed screw=%.0f RPM, spool=%.0f RPM\n", savedScrew, savedSpool);
 
   } else if (strcmp(type, "STOP") == 0) {
     state.running = false;
-    controlMotorSpeed(0);
-    controlWinderSpeed(0);
+    controlScrewMotorSpeed(0);
+    controlSpoolMotorSpeed(0);
     Serial.println("[CMD] System stopped");
-
-  } else if (strcmp(type, "SET_PID") == 0) {
-    int pidZone = doc["zone"] | 0;
-    float pidVal = doc["value"] | 0.0;
-    preferences.begin("extrude", false);
-    if (pidZone == 1) { state.kp = pidVal; preferences.putFloat("kp", pidVal); }
-    if (pidZone == 2) { state.ki = pidVal; preferences.putFloat("ki", pidVal); }
-    if (pidZone == 3) { state.kd = pidVal; preferences.putFloat("kd", pidVal); }
-    preferences.end();
-    const char* pidLabel = pidZone == 1 ? "P" : pidZone == 2 ? "I" : "D";
-    Serial.printf("[CMD] PID %s-Gain -> %.2f\n", pidLabel, pidVal);
 
   } else {
     Serial.printf("[CMD] Unknown command: %s\n", type);
@@ -452,26 +414,19 @@ boolean mqttReconnect() {
 
 void loadSettings() {
   preferences.begin("extrude", true);
-  state.set_point_1 = preferences.getFloat("sp_1", 0.0f);
-  state.set_point_2 = preferences.getFloat("sp_2", 0.0f);
-  state.set_point_3 = preferences.getFloat("sp_3", 0.0f);
+  state.set_point_1 = preferences.getFloat("sp_1", 220.0f);
+  state.set_point_2 = preferences.getFloat("sp_2", 215.0f);
   
   state.heater_1 = state.set_point_1;
   state.heater_2 = state.set_point_2;
-  state.heater_3 = state.set_point_3;
 
-  state.motor_speed = preferences.getFloat("m_spd", 0.0f);
-  state.winder_speed = preferences.getFloat("w_spd", 0.0f);
-  state.filament_dia = (state.motor_speed > 0) ? 2.85f : 0.0f;
-
-  state.kp = preferences.getFloat("kp", 0.0f);
-  state.ki = preferences.getFloat("ki", 0.0f);
-  state.kd = preferences.getFloat("kd", 0.0f);
+  state.screw_motor_speed = preferences.getFloat("screw_spd", 30.0f);
+  state.spool_motor_speed = preferences.getFloat("spool_spd", 25.0f);
+  state.filament_dia = (state.screw_motor_speed > 0) ? 2.85f : 0.0f;
   preferences.end();
-  Serial.printf("[SETTINGS] Loaded: sp1=%.1f sp2=%.1f sp3=%.1f | motor=%.0f | winder=%.0f | kp=%.2f ki=%.2f kd=%.2f\n",
-                state.set_point_1, state.set_point_2, state.set_point_3,
-                state.motor_speed, state.winder_speed,
-                state.kp, state.ki, state.kd);
+  Serial.printf("[SETTINGS] Loaded: sp1=%.1f sp2=%.1f | screw=%.0f | spool=%.0f\n",
+                state.set_point_1, state.set_point_2,
+                state.screw_motor_speed, state.spool_motor_speed);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -544,16 +499,11 @@ void loop() {
     
     newTelemetry.heater_1 = readHeaterTemperature(1);
     newTelemetry.heater_2 = readHeaterTemperature(2);
-    newTelemetry.heater_3 = readHeaterTemperature(3);
-    newTelemetry.motor_speed = readMotorSpeed();
+    newTelemetry.screw_motor_speed = readScrewMotorSpeed();
     newTelemetry.filament_diameter = readFilamentDiameter();
-    newTelemetry.winder_speed = readWinderSpeed();
+    newTelemetry.spool_motor_speed = readSpoolMotorSpeed();
     newTelemetry.set_point_1 = state.set_point_1;
     newTelemetry.set_point_2 = state.set_point_2;
-    newTelemetry.set_point_3 = state.set_point_3;
-    newTelemetry.kp = state.kp;
-    newTelemetry.ki = state.ki;
-    newTelemetry.kd = state.kd;
     newTelemetry.timestamp_ms = now;
 
     pushToBuffer(newTelemetry);

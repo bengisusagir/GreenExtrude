@@ -82,9 +82,8 @@ function makeTelemetry(overrides: Partial<TelemetryData> = {}): TelemetryData {
     timestamp: new Date().toISOString(),
     heater_1: 200,
     heater_2: 200,
-    heater_3: 200,
-    motor_speed: 30,
-    winder_speed: 25,
+    screw_motor_speed: 30,
+    spool_motor_speed: 25,
     filament_diameter: 2.85,
     ...overrides,
   };

@@ -55,10 +55,9 @@ export function toHtmlTable(
           <td style="padding:4px 8px;border:1px solid #dee2e6">${fmtTimestamp(r.timestamp)}</td>
           <td style="padding:4px 8px;border:1px solid #dee2e6;text-align:center">${r.heater_1}</td>
           <td style="padding:4px 8px;border:1px solid #dee2e6;text-align:center">${r.heater_2}</td>
-          <td style="padding:4px 8px;border:1px solid #dee2e6;text-align:center">${r.heater_3}</td>
-          <td style="padding:4px 8px;border:1px solid #dee2e6;text-align:center">${r.motor_speed}</td>
+          <td style="padding:4px 8px;border:1px solid #dee2e6;text-align:center">${r.screw_motor_speed}</td>
           <td style="padding:4px 8px;border:1px solid #dee2e6;text-align:center">${r.filament_diameter}</td>
-          <td style="padding:4px 8px;border:1px solid #dee2e6;text-align:center">${r.winder_speed}</td>
+          <td style="padding:4px 8px;border:1px solid #dee2e6;text-align:center">${r.spool_motor_speed}</td>
         </tr>`
     )
     .join("\n");
@@ -85,10 +84,9 @@ export function toHtmlTable(
     <th style="padding:6px 8px;border:1px solid #27ae60;text-align:left">Timestamp</th>
     <th style="padding:6px 8px;border:1px solid #27ae60;text-align:center">Heater 1</th>
     <th style="padding:6px 8px;border:1px solid #27ae60;text-align:center">Heater 2</th>
-    <th style="padding:6px 8px;border:1px solid #27ae60;text-align:center">Heater 3</th>
-    <th style="padding:6px 8px;border:1px solid #27ae60;text-align:center">Motor RPM</th>
+    <th style="padding:6px 8px;border:1px solid #27ae60;text-align:center">Screw Motor RPM</th>
     <th style="padding:6px 8px;border:1px solid #27ae60;text-align:center">Filament Ø (mm)</th>
-    <th style="padding:6px 8px;border:1px solid #27ae60;text-align:center">Winder RPM</th>
+    <th style="padding:6px 8px;border:1px solid #27ae60;text-align:center">Spool Motor RPM</th>
   </tr>
 </thead>
 <tbody>
