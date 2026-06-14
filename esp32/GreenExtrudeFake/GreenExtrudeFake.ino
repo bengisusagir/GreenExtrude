@@ -270,7 +270,7 @@ void setupWiFi() {
 
 void publishTelemetry(BufferedTelemetry data) {
   // Build JSON payload matching the TelemetryData schema exactly
-  StaticJsonDocument<512> doc;
+  StaticJsonDocument<768> doc;
   doc["device_id"]                = DEVICE_ID;
   doc["heater_1"]                 = round(data.heater_1 * 100) / 100.0;
   doc["heater_2"]                 = round(data.heater_2 * 100) / 100.0;
@@ -290,7 +290,7 @@ void publishTelemetry(BufferedTelemetry data) {
            (data.timestamp_ms / 1000) % 60);
   doc["timestamp"] = ts;
 
-  char payload[512];
+  char payload[768];
   serializeJson(doc, payload);
 
   bool isHistorical = (millis() - data.timestamp_ms > 2000);
@@ -300,7 +300,8 @@ void publishTelemetry(BufferedTelemetry data) {
                   isHistorical ? "-OFFLINE" : "",
                   data.heater_1, data.heater_2, data.screw_motor_speed, data.filament_diameter, data.spool_motor_speed);
   } else {
-    Serial.println("[TX] Transmission FAILED!");
+    Serial.println("[TX] Transmission FAILED! Pushing back to buffer...");
+    pushToBuffer(data);
   }
 }
 
@@ -464,13 +465,17 @@ void setup() {
   setupWiFi();
 
   mqtt.setServer(MQTT_BROKER, MQTT_PORT);
-  mqtt.setBufferSize(512); // Increase buffer size to handle larger JSON payloads
+  mqtt.setBufferSize(1024);
   mqtt.setKeepAlive(30); // 30s Keep-alive protects against network jitter
   mqtt.setCallback(handleCommand);
   mqttReconnect();
 }
 
 void loop() {
+  if (mqtt.connected()) {
+    mqtt.loop();
+  }
+
   // ─── Built-in LED: OK = solid, ANY problem = blink ───
   unsigned long sinceLastPublish = millis() - lastSuccessfulPublishMs;
   if (sinceLastPublish < 1500) {
@@ -500,8 +505,7 @@ void loop() {
         lastReconnectAttemptMs = 0;
       }
     }
-  } else {
-    mqtt.loop();
+    return; 
   }
 
   // Periodic telemetry generation and buffering
@@ -525,14 +529,10 @@ void loop() {
   }
 
   // Send queued data one packet per loop iteration if MQTT is connected
-  if (mqtt.connected() && bufferCount > 0) {
+  if (bufferCount > 0) {
     BufferedTelemetry unsentData;
     if (popFromBuffer(unsentData)) {
       publishTelemetry(unsentData);
-      // Small delay prevents overwhelming the broker during burst transmissions
-      if (bufferCount > 0) {
-        delay(30);
-      }
     }
   }
 }
