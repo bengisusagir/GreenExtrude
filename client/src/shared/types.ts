@@ -85,6 +85,21 @@ export const SENSOR_THRESHOLDS = {
     DANGER: 230,
   },
   FILAMENT_DIAMETER: {
+    2.85: {
+      TARGET: 2.85,
+      WARNING_MIN: 2.78,
+      WARNING_MAX: 2.92,
+      DANGER_MIN: 2.70,
+      DANGER_MAX: 3.00,
+    },
+    1.75: {
+      TARGET: 1.75,
+      WARNING_MIN: 1.68,
+      WARNING_MAX: 1.82,
+      DANGER_MIN: 1.60,
+      DANGER_MAX: 1.90,
+    },
+    // Backwards compatibility / default fallback
     TARGET: 2.85,
     WARNING_MIN: 2.78,
     WARNING_MAX: 2.92,

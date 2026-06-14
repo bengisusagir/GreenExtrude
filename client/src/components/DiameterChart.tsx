@@ -18,6 +18,9 @@ export default function DiameterChart({
   currentValue,
   target = SENSOR_THRESHOLDS.FILAMENT_DIAMETER.TARGET,
 }: DiameterChartProps) {
+  const activePreset = (target === 1.75 || target === 2.85) ? target : 2.85;
+  const thresholds = SENSOR_THRESHOLDS.FILAMENT_DIAMETER[activePreset];
+
   const [paused, setPaused] = useState(false);
   const frozenDataRef = useRef(data);
 
@@ -76,11 +79,11 @@ export default function DiameterChart({
   // Color-coded current value
   const getStatusColor = (value: number | undefined) => {
     if (value === undefined) return "#FFFFFF";
-    if (value >= SENSOR_THRESHOLDS.FILAMENT_DIAMETER.WARNING_MIN &&
-        value <= SENSOR_THRESHOLDS.FILAMENT_DIAMETER.WARNING_MAX)
+    if (value >= thresholds.WARNING_MIN &&
+        value <= thresholds.WARNING_MAX)
       return "#2ECC71"; // green
-    if (value >= SENSOR_THRESHOLDS.FILAMENT_DIAMETER.DANGER_MIN &&
-        value <= SENSOR_THRESHOLDS.FILAMENT_DIAMETER.DANGER_MAX)
+    if (value >= thresholds.DANGER_MIN &&
+        value <= thresholds.DANGER_MAX)
       return "#F1C40F"; // yellow
     return "#E74C3C"; // red
   };
@@ -195,7 +198,7 @@ export default function DiameterChart({
             <ChartsGrid horizontal vertical />
             <ChartsAxisHighlight x="line" />
             <ChartsReferenceLine
-              y={SENSOR_THRESHOLDS.FILAMENT_DIAMETER.WARNING_MAX}
+              y={thresholds.WARNING_MAX}
               label={""}
               lineLabel={{
                 labelPlacement: "right",
@@ -205,7 +208,7 @@ export default function DiameterChart({
               line={{ stroke: "#F1C40F", strokeDasharray: "6 4", strokeWidth: 1 }}
             />
             <ChartsReferenceLine
-              y={SENSOR_THRESHOLDS.FILAMENT_DIAMETER.WARNING_MIN}
+              y={thresholds.WARNING_MIN}
               label={""}
               lineLabel={{
                 labelPlacement: "right",

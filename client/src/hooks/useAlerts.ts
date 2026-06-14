@@ -56,7 +56,10 @@ export function useAlerts(): AlertItem[] {
       }
     }
 
-    const { TARGET, WARNING_MIN, WARNING_MAX, DANGER_MIN, DANGER_MAX } = SENSOR_THRESHOLDS.FILAMENT_DIAMETER;
+    const activePreset = (telemetry.filament_diameter_setting === 1.75 || telemetry.filament_diameter_setting === 2.85)
+      ? telemetry.filament_diameter_setting
+      : 2.85;
+    const { TARGET, WARNING_MIN, WARNING_MAX, DANGER_MIN, DANGER_MAX } = SENSOR_THRESHOLDS.FILAMENT_DIAMETER[activePreset];
     const dia = telemetry.filament_diameter;
 
     if (dia !== undefined && typeof dia === "number") {

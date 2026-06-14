@@ -31,6 +31,9 @@ export default function Settings() {
       if (telemetry.set_point_2 !== undefined) setTempZone2(telemetry.set_point_2);
       if (telemetry.screw_motor_speed !== undefined) setScrewMotorSpeed(Math.round(telemetry.screw_motor_speed));
       if (telemetry.spool_motor_speed !== undefined) setSpoolMotorSpeed(Math.round(telemetry.spool_motor_speed));
+      if (telemetry.filament_diameter_setting === 1.75 || telemetry.filament_diameter_setting === 2.85) {
+        setFilamentDiameter(telemetry.filament_diameter_setting);
+      }
       setHasInitialized(true);
     }
   }, [telemetry, hasInitialized]);
