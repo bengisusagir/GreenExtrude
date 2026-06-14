@@ -35,7 +35,7 @@ export default function Settings() {
     }
   }, [telemetry, hasInitialized]);
 
-  // When filament diameter preset changes, replace all settable values
+  // When filament diameter preset changes, replace all settable values and send command
   const handleFilamentChange = (preset: FilamentDiameterPreset) => {
     setFilamentDiameter(preset);
     const values = FILAMENT_PRESETS[preset];
@@ -43,6 +43,13 @@ export default function Settings() {
     setTempZone2(values.set_point_2);
     setScrewMotorSpeed(values.screw_motor_speed);
     setSpoolMotorSpeed(values.spool_motor_speed);
+
+    // Send the filament diameter setting to the ESP32 so it persists & appears in telemetry
+    sendCommand({
+      type: "SET_FILAMENT_DIAMETER",
+      value: preset,
+      timestamp: new Date().toISOString(),
+    });
   };
 
   const handleApplyAndStart = () => {
@@ -66,6 +73,11 @@ export default function Settings() {
     sendCommand({
       type: "SET_SPOOL_MOTOR_SPEED",
       value: spoolMotorSpeed,
+      timestamp: new Date().toISOString(),
+    });
+    sendCommand({
+      type: "SET_FILAMENT_DIAMETER",
+      value: filamentDiameter,
       timestamp: new Date().toISOString(),
     });
 

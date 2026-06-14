@@ -16,6 +16,7 @@ let state = {
   heater_2: 200, // °C — melt zone
   screw_motor_speed: 30,   // RPM
   filament_diameter: 2.85,  // mm
+  filament_diameter_setting: 2.85, // mm — target/preset filament diameter
   spool_motor_speed: 25,    // RPM
   set_point_1: 220,
   set_point_2: 215,
@@ -51,6 +52,7 @@ function generateTelemetry(): TelemetryData {
     heater_2: maybeInjectAnomaly(temp2, state.heater_2, 250, 40),
     screw_motor_speed: maybeInjectAnomaly(screwMotor, state.screw_motor_speed, 80, 0),
     filament_diameter: maybeInjectAnomaly(diameter, state.filament_diameter, 3.25, 2.50),
+    filament_diameter_setting: state.filament_diameter_setting,
     spool_motor_speed: maybeInjectAnomaly(spoolMotor, state.spool_motor_speed, 70, 0),
     set_point_1: state.set_point_1,
     set_point_2: state.set_point_2,
@@ -114,6 +116,11 @@ client.on("message", (_topic: string, message: Buffer) => {
       case "SET_SPOOL_MOTOR_SPEED":
         state.spool_motor_speed = cmd.value ?? state.spool_motor_speed;
         console.log(`[SIM] Spool motor speed set to ${cmd.value} RPM`);
+        break;
+
+      case "SET_FILAMENT_DIAMETER":
+        state.filament_diameter_setting = cmd.value ?? 2.85;
+        console.log(`[SIM] Filament diameter setting set to ${state.filament_diameter_setting}mm`);
         break;
 
       case "EMERGENCY_STOP":

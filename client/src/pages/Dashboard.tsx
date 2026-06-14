@@ -54,7 +54,7 @@ export default function Dashboard() {
             <DiameterChart
               data={chartData}
               currentValue={telemetry?.filament_diameter}
-              target={2.85}
+              target={telemetry?.filament_diameter_setting ?? 2.85}
             />
           </div>
         </div>

@@ -5,6 +5,7 @@ export interface TelemetryData {
   heater_2: number;
   screw_motor_speed: number;
   filament_diameter: number;
+  filament_diameter_setting?: number; // the target/preset filament diameter (1.75 or 2.85)
   spool_motor_speed: number;
   set_point_1?: number;
   set_point_2?: number;
@@ -16,6 +17,7 @@ export type CommandType =
   | "SET_TEMPERATURE"
   | "SET_SCREW_MOTOR_SPEED"
   | "SET_SPOOL_MOTOR_SPEED"
+  | "SET_FILAMENT_DIAMETER"
   | "EMERGENCY_STOP"
   | "START"
   | "STOP";

@@ -101,6 +101,7 @@ describe("generateTelemetry", () => {
     expect(data).toHaveProperty("heater_2");
     expect(data).toHaveProperty("screw_motor_speed");
     expect(data).toHaveProperty("filament_diameter");
+    expect(data).toHaveProperty("filament_diameter_setting");
     expect(data).toHaveProperty("spool_motor_speed");
     expect(data).toHaveProperty("timestamp");
   });

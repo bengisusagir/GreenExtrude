@@ -20,6 +20,7 @@ export interface SimState {
   heater_2: number;
   screw_motor_speed: number;
   filament_diameter: number;
+  filament_diameter_setting: number;
   spool_motor_speed: number;
   set_point_1: number;
   set_point_2: number;
@@ -31,6 +32,7 @@ export const DEFAULT_STATE: SimState = {
   heater_2: 200,
   screw_motor_speed: 30,
   filament_diameter: 2.85,
+  filament_diameter_setting: 2.85,
   spool_motor_speed: 25,
   set_point_1: 220,
   set_point_2: 215,
@@ -90,6 +92,7 @@ export function generateTelemetry(
     heater_2: Math.max(0, maybeInjectAnomaly(temp2, state.heater_2, 250, 40, randomProvider())),
     screw_motor_speed: Math.max(0, maybeInjectAnomaly(screwMotor, state.screw_motor_speed, 80, 0, randomProvider())),
     filament_diameter: Math.max(0, maybeInjectAnomaly(diameter, state.filament_diameter, 3.25, 2.5, randomProvider())),
+    filament_diameter_setting: state.filament_diameter_setting,
     spool_motor_speed: Math.max(0, maybeInjectAnomaly(spoolMotor, state.spool_motor_speed, 70, 0, randomProvider())),
     set_point_1: state.set_point_1,
     set_point_2: state.set_point_2,
@@ -118,6 +121,10 @@ export function applyCommand(state: SimState, cmd: DeviceCommand): SimState {
 
     case "SET_SPOOL_MOTOR_SPEED":
       next.spool_motor_speed = Math.max(0, cmd.value ?? next.spool_motor_speed);
+      break;
+
+    case "SET_FILAMENT_DIAMETER":
+      next.filament_diameter_setting = cmd.value ?? next.filament_diameter_setting;
       break;
 
     case "EMERGENCY_STOP":

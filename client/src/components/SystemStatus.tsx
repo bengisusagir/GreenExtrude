@@ -102,6 +102,18 @@ export default function SystemStatus() {
               {isHealthy ? "Active" : "Inactive"}
             </span>
           </div>
+
+          <div className="system-status__item">
+            <div className="system-status__item-left">
+              <span className="system-status__dot system-status__dot--online" />
+              <span className="system-status__item-label">Filament Ø:</span>
+            </div>
+            <span className="system-status__item-value system-status__item-value--online">
+              {telemetry?.filament_diameter_setting
+                ? `${telemetry.filament_diameter_setting} mm`
+                : "---"}
+            </span>
+          </div>
         </div>
       </div>
     </div>

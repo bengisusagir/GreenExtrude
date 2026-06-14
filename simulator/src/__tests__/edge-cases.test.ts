@@ -94,6 +94,7 @@ describe("generateTelemetry edge cases", () => {
       heater_2: 0,
       screw_motor_speed: 0,
       filament_diameter: 0,
+      filament_diameter_setting: 2.85,
       spool_motor_speed: 0,
       running: true,
     };
@@ -113,6 +114,7 @@ describe("generateTelemetry edge cases", () => {
       heater_2: -50,
       screw_motor_speed: -10,
       filament_diameter: -1.0,
+      filament_diameter_setting: 2.85,
       spool_motor_speed: -5,
       running: true,
     };

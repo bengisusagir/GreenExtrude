@@ -42,6 +42,7 @@ struct SimState {
   float heater_2;         // °C — melt zone
   float screw_motor_speed; // RPM
   float filament_dia;     // mm
+  float filament_dia_setting; // mm — target/preset filament diameter (1.75 or 2.85)
   float spool_motor_speed; // RPM
   float set_point_1;
   float set_point_2;
@@ -53,6 +54,7 @@ SimState state = {
   200.0,   // heater_2
   30.0,    // screw_motor_speed
   2.85,    // filament_dia
+  2.85,    // filament_dia_setting
   25.0,    // spool_motor_speed
   220.0,   // set_point_1
   215.0,   // set_point_2
@@ -65,6 +67,7 @@ struct BufferedTelemetry {
   float heater_2;
   float screw_motor_speed;
   float filament_diameter;
+  float filament_diameter_setting;
   float spool_motor_speed;
   float set_point_1;
   float set_point_2;
@@ -195,7 +198,7 @@ void controlScrewMotorSpeed(float speedValue) {
   // TODO: Output speed control command to physical screw motor driver (e.g., PWM, analogWrite)
 #else
   state.screw_motor_speed = speedValue;
-  state.filament_dia = (speedValue > 0) ? 2.85f : 0.0f;
+  state.filament_dia = (speedValue > 0) ? state.filament_dia_setting : 0.0f;
 #endif
 }
 
@@ -268,14 +271,15 @@ void setupWiFi() {
 void publishTelemetry(BufferedTelemetry data) {
   // Build JSON payload matching the TelemetryData schema exactly
   StaticJsonDocument<512> doc;
-  doc["device_id"]          = DEVICE_ID;
-  doc["heater_1"]           = round(data.heater_1 * 100) / 100.0;
-  doc["heater_2"]           = round(data.heater_2 * 100) / 100.0;
-  doc["screw_motor_speed"]  = round(data.screw_motor_speed * 100) / 100.0;
-  doc["filament_diameter"]  = round(data.filament_diameter * 100) / 100.0;
-  doc["spool_motor_speed"]  = round(data.spool_motor_speed * 100) / 100.0;
-  doc["set_point_1"]        = round(data.set_point_1 * 100) / 100.0;
-  doc["set_point_2"]        = round(data.set_point_2 * 100) / 100.0;
+  doc["device_id"]                = DEVICE_ID;
+  doc["heater_1"]                 = round(data.heater_1 * 100) / 100.0;
+  doc["heater_2"]                 = round(data.heater_2 * 100) / 100.0;
+  doc["screw_motor_speed"]        = round(data.screw_motor_speed * 100) / 100.0;
+  doc["filament_diameter"]        = round(data.filament_diameter * 100) / 100.0;
+  doc["filament_diameter_setting"]= round(data.filament_diameter_setting * 100) / 100.0;
+  doc["spool_motor_speed"]        = round(data.spool_motor_speed * 100) / 100.0;
+  doc["set_point_1"]              = round(data.set_point_1 * 100) / 100.0;
+  doc["set_point_2"]              = round(data.set_point_2 * 100) / 100.0;
 
   // Preserve generation time by converting timestamp_ms into ISO 8601 format
   char ts[25];
@@ -347,6 +351,14 @@ void handleCommand(char* topic, byte* payload, unsigned int length) {
     preferences.putFloat("spool_spd", val);
     preferences.end();
     Serial.printf("[CMD] Spool motor target speed -> %.0f RPM\n", val);
+
+  } else if (strcmp(type, "SET_FILAMENT_DIAMETER") == 0) {
+    float val = doc["value"] | 2.85;
+    state.filament_dia_setting = val;
+    preferences.begin("extrude", false);
+    preferences.putFloat("fil_dia_set", val);
+    preferences.end();
+    Serial.printf("[CMD] Filament diameter setting -> %.2f mm\n", val);
 
   } else if (strcmp(type, "EMERGENCY_STOP") == 0) {
     executeEmergencyStop();
@@ -422,11 +434,12 @@ void loadSettings() {
 
   state.screw_motor_speed = preferences.getFloat("screw_spd", 30.0f);
   state.spool_motor_speed = preferences.getFloat("spool_spd", 25.0f);
-  state.filament_dia = (state.screw_motor_speed > 0) ? 2.85f : 0.0f;
+  state.filament_dia_setting = preferences.getFloat("fil_dia_set", 2.85f);
+  state.filament_dia = (state.screw_motor_speed > 0) ? state.filament_dia_setting : 0.0f;
   preferences.end();
-  Serial.printf("[SETTINGS] Loaded: sp1=%.1f sp2=%.1f | screw=%.0f | spool=%.0f\n",
+  Serial.printf("[SETTINGS] Loaded: sp1=%.1f sp2=%.1f | screw=%.0f | spool=%.0f | dia_setting=%.2f\n",
                 state.set_point_1, state.set_point_2,
-                state.screw_motor_speed, state.spool_motor_speed);
+                state.screw_motor_speed, state.spool_motor_speed, state.filament_dia_setting);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -501,6 +514,7 @@ void loop() {
     newTelemetry.heater_2 = readHeaterTemperature(2);
     newTelemetry.screw_motor_speed = readScrewMotorSpeed();
     newTelemetry.filament_diameter = readFilamentDiameter();
+    newTelemetry.filament_diameter_setting = state.filament_dia_setting;
     newTelemetry.spool_motor_speed = readSpoolMotorSpeed();
     newTelemetry.set_point_1 = state.set_point_1;
     newTelemetry.set_point_2 = state.set_point_2;
