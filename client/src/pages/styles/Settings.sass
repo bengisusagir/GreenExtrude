@@ -20,12 +20,12 @@
     background: $color-bg-card
     border: 1px solid $color-border
     border-radius: $border-radius-lg
-    padding: $spacing-xl $spacing-lg
+    padding: $spacing-md $spacing-xl
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05)
     backdrop-filter: blur(10px)
     display: flex
     flex-direction: column
-    gap: $spacing-xl
+    gap: $spacing-lg
 
     @media (max-width: $breakpoint-md)
       padding: $spacing-lg
@@ -150,6 +150,15 @@
     &--two
       grid-template-columns: 1fr 1fr
       max-width: 600px
+      margin: 0 auto
+
+      @media (max-width: $breakpoint-md)
+        grid-template-columns: 1fr
+        max-width: 100%
+
+    &--three
+      grid-template-columns: 1fr 1fr 1fr
+      max-width: 900px
       margin: 0 auto
 
       @media (max-width: $breakpoint-md)
@@ -320,6 +329,65 @@
     font-size: 0.75rem
     color: $color-text-secondary
     font-weight: 400
+
+  // Cooling Fans Toggle (inside temp grid)
+  &__fans-control
+    display: flex
+    flex-direction: column
+    align-items: center
+    gap: $spacing-sm
+
+  &__fans-status
+    font-size: 0.95rem
+    font-weight: 700
+    font-family: $font-mono
+
+    &--on
+      color: $color-primary
+
+    &--off
+      color: $color-danger
+
+  &__fans-toggle
+    position: relative
+    display: inline-block
+    width: 64px
+    height: 34px
+    cursor: pointer
+
+  &__fans-checkbox
+    opacity: 0
+    width: 0
+    height: 0
+
+    &:checked + .settings__fans-slider
+      background-color: $color-primary
+      box-shadow: 0 0 12px rgba($color-primary, 0.5)
+
+    &:checked + .settings__fans-slider::before
+      transform: translateX(30px)
+
+  &__fans-slider
+    position: absolute
+    top: 0
+    left: 0
+    right: 0
+    bottom: 0
+    background-color: $color-border
+    border-radius: 34px
+    transition: all $transition-fast ease
+
+    &::before
+      content: ""
+      position: absolute
+      height: 26px
+      width: 26px
+      left: 4px
+      bottom: 4px
+      background-color: white
+      border-radius: 50%
+      transition: all $transition-fast ease
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3)
 
   // Action Buttons
   &__buttons

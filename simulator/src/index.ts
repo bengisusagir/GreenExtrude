@@ -21,6 +21,7 @@ let state = {
   set_point_1: 220,
   set_point_2: 215,
   running: true,
+  fans_on: true,
 };
 
 // ─── Realistic noise/drift ───
@@ -56,6 +57,7 @@ function generateTelemetry(): TelemetryData {
     spool_motor_speed: maybeInjectAnomaly(spoolMotor, state.spool_motor_speed, 70, 0),
     set_point_1: state.set_point_1,
     set_point_2: state.set_point_2,
+    fans_on: state.fans_on,
     timestamp: new Date().toISOString(),
   };
 }
@@ -123,11 +125,17 @@ client.on("message", (_topic: string, message: Buffer) => {
         console.log(`[SIM] Filament diameter setting set to ${state.filament_diameter_setting}mm`);
         break;
 
+      case "SET_FANS":
+        state.fans_on = !!cmd.value;
+        console.log(`[SIM] Fans ${state.fans_on ? "ON" : "OFF"}`);
+        break;
+
       case "EMERGENCY_STOP":
         state.running = false;
         state.screw_motor_speed = 0;
         state.spool_motor_speed = 0;
-        console.log("[SIM] ⚠ EMERGENCY STOP — all motors halted");
+        state.fans_on = false;
+        console.log("[SIM] ⚠ EMERGENCY STOP — all motors halted, fans off");
         break;
 
       case "START":
@@ -139,6 +147,7 @@ client.on("message", (_topic: string, message: Buffer) => {
 
       case "STOP":
         state.running = false;
+        state.fans_on = false;
         console.log("[SIM] System stopped gracefully");
         break;
 

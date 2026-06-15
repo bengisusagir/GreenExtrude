@@ -25,6 +25,7 @@ export interface SimState {
   set_point_1: number;
   set_point_2: number;
   running: boolean;
+  fans_on: boolean;
 }
 
 export const DEFAULT_STATE: SimState = {
@@ -37,6 +38,7 @@ export const DEFAULT_STATE: SimState = {
   set_point_1: 220,
   set_point_2: 215,
   running: true,
+  fans_on: true,
 };
 
 // ─── Pure Functions ────────────────────────────────────────────────────────
@@ -96,6 +98,7 @@ export function generateTelemetry(
     spool_motor_speed: Math.max(0, maybeInjectAnomaly(spoolMotor, state.spool_motor_speed, 70, 0, randomProvider())),
     set_point_1: state.set_point_1,
     set_point_2: state.set_point_2,
+    fans_on: state.fans_on,
     timestamp: new Date().toISOString(),
   };
 }
@@ -127,10 +130,15 @@ export function applyCommand(state: SimState, cmd: DeviceCommand): SimState {
       next.filament_diameter_setting = cmd.value ?? next.filament_diameter_setting;
       break;
 
+    case "SET_FANS":
+      next.fans_on = !!cmd.value;
+      break;
+
     case "EMERGENCY_STOP":
       next.running = false;
       next.screw_motor_speed = 0;
       next.spool_motor_speed = 0;
+      next.fans_on = false;
       break;
 
     case "START":
@@ -144,6 +152,7 @@ export function applyCommand(state: SimState, cmd: DeviceCommand): SimState {
       // SAFETY: Stopped machine must not have spinning motors
       next.screw_motor_speed = 0;
       next.spool_motor_speed = 0;
+      next.fans_on = false;
       break;
 
     default:

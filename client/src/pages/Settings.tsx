@@ -13,6 +13,7 @@ export default function Settings() {
   const [tempZone2, setTempZone2] = useState(FILAMENT_PRESETS[2.85].set_point_2);
   const [screwMotorSpeed, setScrewMotorSpeed] = useState(FILAMENT_PRESETS[2.85].screw_motor_speed);
   const [spoolMotorSpeed, setSpoolMotorSpeed] = useState(FILAMENT_PRESETS[2.85].spool_motor_speed);
+  const [fansOn, setFansOn] = useState(true);
 
   const [hasInitialized, setHasInitialized] = useState(false);
   const [toastOpen, setToastOpen] = useState(false);
@@ -34,6 +35,7 @@ export default function Settings() {
       if (telemetry.set_point_2 !== undefined) setTempZone2(telemetry.set_point_2);
       if (telemetry.screw_motor_speed !== undefined) setScrewMotorSpeed(Math.round(telemetry.screw_motor_speed));
       if (telemetry.spool_motor_speed !== undefined) setSpoolMotorSpeed(Math.round(telemetry.spool_motor_speed));
+      if (telemetry.fans_on !== undefined) setFansOn(telemetry.fans_on);
       if (telemetry.filament_diameter_setting === 1.75 || telemetry.filament_diameter_setting === 2.85) {
         setFilamentDiameter(telemetry.filament_diameter_setting);
       }
@@ -82,6 +84,11 @@ export default function Settings() {
       timestamp: new Date().toISOString(),
     });
     sendCommand({
+      type: "SET_FANS",
+      value: fansOn ? 1 : 0,
+      timestamp: new Date().toISOString(),
+    });
+    sendCommand({
       type: "SET_FILAMENT_DIAMETER",
       value: filamentDiameter,
       timestamp: new Date().toISOString(),
@@ -102,6 +109,7 @@ export default function Settings() {
       tempZone2,
       screwMotorSpeed,
       spoolMotorSpeed,
+      fansOn,
     });
   };
 
@@ -158,7 +166,7 @@ export default function Settings() {
         {/* ─── Temperature Set Points (2 zones) ─── */}
         <div className="settings__temp-section">
           <h2 className="settings__section-title">Heater Set Points (°C)</h2>
-          <div className="settings__temp-grid settings__temp-grid--two">
+          <div className="settings__temp-grid settings__temp-grid--three">
             <div className="settings__temp-item">
               <label className="settings__temp-label" htmlFor="temp-zone1">Zone 1</label>
               <div className="settings__temp-control settings__temp-control--zone1">
@@ -239,6 +247,26 @@ export default function Settings() {
                     <polyline points="18 15 12 9 6 15"></polyline>
                   </svg>
                 </button>
+              </div>
+            </div>
+
+            {/* ─── Cooling Fans Toggle ─── */}
+            <div className="settings__temp-item">
+              <label className="settings__temp-label">Cooling Fans</label>
+              <div className="settings__fans-control">
+                <label className="settings__fans-toggle" htmlFor="fans-toggle">
+                  <input
+                    id="fans-toggle"
+                    type="checkbox"
+                    className="settings__fans-checkbox"
+                    checked={fansOn}
+                    onChange={(e) => setFansOn(e.target.checked)}
+                  />
+                  <span className="settings__fans-slider"></span>
+                </label>
+                <span className={`settings__fans-status ${fansOn ? "settings__fans-status--on" : "settings__fans-status--off"}`}>
+                  {fansOn ? "ON" : "OFF"}
+                </span>
               </div>
             </div>
           </div>

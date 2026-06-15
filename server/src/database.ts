@@ -7,6 +7,7 @@ const DB_PATH = path.join(__dirname, "..", "greenextrude.db");
 
 let db: SqlJsDatabase;
 let hasDiaSettingColumn = false;
+let hasFansOnColumn = false;
 
 export async function initDatabase(): Promise<SqlJsDatabase> {
   const SQL = await initSqlJs();
@@ -33,6 +34,7 @@ export async function initDatabase(): Promise<SqlJsDatabase> {
       db = new SQL.Database();
     } else {
       hasDiaSettingColumn = columns.includes("filament_diameter_setting");
+      hasFansOnColumn = columns.includes("fans_on");
     }
   } else {
     db = new SQL.Database();
@@ -47,6 +49,7 @@ export async function initDatabase(): Promise<SqlJsDatabase> {
       screw_motor_speed REAL,
       filament_diameter REAL,
       filament_diameter_setting REAL DEFAULT 2.85,
+      fans_on INTEGER DEFAULT 1,
       spool_motor_speed REAL,
       device_id TEXT
     )
@@ -64,6 +67,16 @@ export async function initDatabase(): Promise<SqlJsDatabase> {
     }
   }
 
+  if (!hasFansOnColumn) {
+    try {
+      db.run("ALTER TABLE telemetry ADD COLUMN fans_on INTEGER DEFAULT 1");
+      hasFansOnColumn = true;
+      console.log("[DB] Added fans_on column.");
+    } catch (e) {
+      hasFansOnColumn = true;
+    }
+  }
+
   console.log("[DB] SQLite database initialized at", DB_PATH);
   return db;
 }
@@ -77,14 +90,15 @@ function saveToFile(): void {
 export function insertTelemetry(data: TelemetryData): void {
   db.run(
     `INSERT INTO telemetry 
-      (heater_1, heater_2, screw_motor_speed, filament_diameter, filament_diameter_setting, spool_motor_speed, device_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      (heater_1, heater_2, screw_motor_speed, filament_diameter, filament_diameter_setting, fans_on, spool_motor_speed, device_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       data.heater_1 ?? null,
       data.heater_2 ?? null,
       data.screw_motor_speed ?? null,
       data.filament_diameter ?? null,
       data.filament_diameter_setting ?? 2.85,
+      data.fans_on ? 1 : 0,
       data.spool_motor_speed ?? null,
       data.device_id ?? "unknown",
     ]
@@ -108,6 +122,7 @@ export function getRecentTelemetry(limit: number = 100): TelemetryData[] {
       screw_motor_speed: row.screw_motor_speed as number,
       filament_diameter: row.filament_diameter as number,
       filament_diameter_setting: row.filament_diameter_setting as number | undefined,
+      fans_on: !!(row.fans_on as number),
       spool_motor_speed: row.spool_motor_speed as number,
       timestamp: row.timestamp as string,
     });
