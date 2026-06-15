@@ -9,8 +9,7 @@ export default function Settings() {
 
   const [filamentDiameter, setFilamentDiameter] = useState<FilamentDiameterPreset>(2.85);
 
-  const [tempZone1, setTempZone1] = useState(FILAMENT_PRESETS[2.85].set_point_1);
-  const [tempZone2, setTempZone2] = useState(FILAMENT_PRESETS[2.85].set_point_2);
+  const [tempSetPoint, setTempSetPoint] = useState(FILAMENT_PRESETS[2.85].set_point);
   const [screwMotorSpeed, setScrewMotorSpeed] = useState(FILAMENT_PRESETS[2.85].screw_motor_speed);
   const [spoolMotorSpeed, setSpoolMotorSpeed] = useState(FILAMENT_PRESETS[2.85].spool_motor_speed);
   const [fansOn, setFansOn] = useState(true);
@@ -23,16 +22,14 @@ export default function Settings() {
   // Check if current form values mismatch the selected preset values
   const currentPresetValues = FILAMENT_PRESETS[filamentDiameter];
   const isPresetMismatch =
-    tempZone1 !== currentPresetValues.set_point_1 ||
-    tempZone2 !== currentPresetValues.set_point_2 ||
+    tempSetPoint !== currentPresetValues.set_point ||
     screwMotorSpeed !== currentPresetValues.screw_motor_speed ||
     spoolMotorSpeed !== currentPresetValues.spool_motor_speed;
 
   // Initialize from telemetry on first connection
   useEffect(() => {
     if (telemetry && !hasInitialized) {
-      if (telemetry.set_point_1 !== undefined) setTempZone1(telemetry.set_point_1);
-      if (telemetry.set_point_2 !== undefined) setTempZone2(telemetry.set_point_2);
+      if (telemetry.set_point !== undefined) setTempSetPoint(telemetry.set_point);
       if (telemetry.screw_motor_speed !== undefined) setScrewMotorSpeed(Math.round(telemetry.screw_motor_speed));
       if (telemetry.spool_motor_speed !== undefined) setSpoolMotorSpeed(Math.round(telemetry.spool_motor_speed));
       if (telemetry.fans_on !== undefined) setFansOn(telemetry.fans_on);
@@ -47,8 +44,7 @@ export default function Settings() {
   const handleFilamentChange = (preset: FilamentDiameterPreset) => {
     setFilamentDiameter(preset);
     const values = FILAMENT_PRESETS[preset];
-    setTempZone1(values.set_point_1);
-    setTempZone2(values.set_point_2);
+    setTempSetPoint(values.set_point);
     setScrewMotorSpeed(values.screw_motor_speed);
     setSpoolMotorSpeed(values.spool_motor_speed);
 
@@ -63,14 +59,7 @@ export default function Settings() {
   const handleApplyAndStart = () => {
     sendCommand({
       type: "SET_TEMPERATURE",
-      zone: 1,
-      value: tempZone1,
-      timestamp: new Date().toISOString(),
-    });
-    sendCommand({
-      type: "SET_TEMPERATURE",
-      zone: 2,
-      value: tempZone2,
+      value: tempSetPoint,
       timestamp: new Date().toISOString(),
     });
     sendCommand({
@@ -105,8 +94,7 @@ export default function Settings() {
 
     console.log("Applying parameters and starting extrusion:", {
       filamentDiameter,
-      tempZone1,
-      tempZone2,
+      tempSetPoint,
       screwMotorSpeed,
       spoolMotorSpeed,
       fansOn,
@@ -163,32 +151,32 @@ export default function Settings() {
           )}
         </div>
 
-        {/* ─── Temperature Set Points (2 zones) ─── */}
+        {/* ─── Temperature Set Point ─── */}
         <div className="settings__temp-section">
-          <h2 className="settings__section-title">Heater Set Points (°C)</h2>
-          <div className="settings__temp-grid settings__temp-grid--three">
+          <h2 className="settings__section-title">Heater Target Temperature (°C)</h2>
+          <div className="settings__temp-grid settings__temp-grid--two">
             <div className="settings__temp-item">
-              <label className="settings__temp-label" htmlFor="temp-zone1">Zone 1</label>
+              <label className="settings__temp-label" htmlFor="temp-setpoint">Set Point</label>
               <div className="settings__temp-control settings__temp-control--zone1">
                 <button
                   type="button"
                   className="settings__temp-btn settings__temp-btn--down"
                   onClick={() => {
-                    setTempZone1((prev) => Math.max(0, prev - 5));
+                    setTempSetPoint((prev) => Math.max(0, prev - 5));
                   }}
-                  aria-label="Decrease Zone 1 Temperature"
+                  aria-label="Decrease Temperature"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="6 9 12 15 18 9"></polyline>
                   </svg>
                 </button>
                 <input
-                  id="temp-zone1"
+                  id="temp-setpoint"
                   type="number"
                   className="settings__temp-input"
-                  value={tempZone1}
+                  value={tempSetPoint}
                   onChange={(e) => {
-                    setTempZone1(parseFloat(e.target.value) || 0);
+                    setTempSetPoint(parseFloat(e.target.value) || 0);
                   }}
                   step="5"
                   min="0"
@@ -198,50 +186,9 @@ export default function Settings() {
                   type="button"
                   className="settings__temp-btn settings__temp-btn--up"
                   onClick={() => {
-                    setTempZone1((prev) => Math.min(300, prev + 5));
+                    setTempSetPoint((prev) => Math.min(300, prev + 5));
                   }}
-                  aria-label="Increase Zone 1 Temperature"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="18 15 12 9 6 15"></polyline>
-                  </svg>
-                </button>
-              </div>
-            </div>
-            <div className="settings__temp-item">
-              <label className="settings__temp-label" htmlFor="temp-zone2">Zone 2</label>
-              <div className="settings__temp-control settings__temp-control--zone2">
-                <button
-                  type="button"
-                  className="settings__temp-btn settings__temp-btn--down"
-                  onClick={() => {
-                    setTempZone2((prev) => Math.max(0, prev - 5));
-                  }}
-                  aria-label="Decrease Zone 2 Temperature"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                  </svg>
-                </button>
-                <input
-                  id="temp-zone2"
-                  type="number"
-                  className="settings__temp-input"
-                  value={tempZone2}
-                  onChange={(e) => {
-                    setTempZone2(parseFloat(e.target.value) || 0);
-                  }}
-                  step="5"
-                  min="0"
-                  max="300"
-                />
-                <button
-                  type="button"
-                  className="settings__temp-btn settings__temp-btn--up"
-                  onClick={() => {
-                    setTempZone2((prev) => Math.min(300, prev + 5));
-                  }}
-                  aria-label="Increase Zone 2 Temperature"
+                  aria-label="Increase Temperature"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="18 15 12 9 6 15"></polyline>

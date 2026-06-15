@@ -22,8 +22,7 @@ export interface SimState {
   filament_diameter: number;
   filament_diameter_setting: number;
   spool_motor_speed: number;
-  set_point_1: number;
-  set_point_2: number;
+  set_point: number;
   running: boolean;
   fans_on: boolean;
 }
@@ -35,8 +34,7 @@ export const DEFAULT_STATE: SimState = {
   filament_diameter: 2.85,
   filament_diameter_setting: 2.85,
   spool_motor_speed: 25,
-  set_point_1: 220,
-  set_point_2: 215,
+  set_point: 220,
   running: true,
   fans_on: true,
 };
@@ -96,8 +94,7 @@ export function generateTelemetry(
     filament_diameter: Math.max(0, maybeInjectAnomaly(diameter, state.filament_diameter, 3.25, 2.5, randomProvider())),
     filament_diameter_setting: state.filament_diameter_setting,
     spool_motor_speed: Math.max(0, maybeInjectAnomaly(spoolMotor, state.spool_motor_speed, 70, 0, randomProvider())),
-    set_point_1: state.set_point_1,
-    set_point_2: state.set_point_2,
+    set_point: state.set_point,
     fans_on: state.fans_on,
     timestamp: new Date().toISOString(),
   };
@@ -114,8 +111,7 @@ export function applyCommand(state: SimState, cmd: DeviceCommand): SimState {
 
   switch (cmd.type) {
     case "SET_TEMPERATURE":
-      if (cmd.zone === 1) { next.heater_1 = cmd.value ?? next.heater_1; next.set_point_1 = cmd.value ?? next.set_point_1; }
-      if (cmd.zone === 2) { next.heater_2 = cmd.value ?? next.heater_2; next.set_point_2 = cmd.value ?? next.set_point_2; }
+      next.heater_1 = cmd.value ?? next.heater_1; next.set_point = cmd.value ?? next.set_point;
       break;
 
     case "SET_SCREW_MOTOR_SPEED":

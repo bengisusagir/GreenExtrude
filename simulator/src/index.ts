@@ -18,8 +18,7 @@ let state = {
   filament_diameter: 2.85,  // mm
   filament_diameter_setting: 2.85, // mm — target/preset filament diameter
   spool_motor_speed: 25,    // RPM
-  set_point_1: 220,
-  set_point_2: 215,
+  set_point: 220,
   running: true,
   fans_on: true,
 };
@@ -55,8 +54,7 @@ function generateTelemetry(): TelemetryData {
     filament_diameter: maybeInjectAnomaly(diameter, state.filament_diameter, 3.25, 2.50),
     filament_diameter_setting: state.filament_diameter_setting,
     spool_motor_speed: maybeInjectAnomaly(spoolMotor, state.spool_motor_speed, 70, 0),
-    set_point_1: state.set_point_1,
-    set_point_2: state.set_point_2,
+    set_point: state.set_point,
     fans_on: state.fans_on,
     timestamp: new Date().toISOString(),
   };
@@ -105,8 +103,7 @@ client.on("message", (_topic: string, message: Buffer) => {
 
     switch (cmd.type) {
       case "SET_TEMPERATURE":
-        if (cmd.zone === 1) { state.heater_1 = cmd.value ?? state.heater_1; state.set_point_1 = cmd.value ?? state.set_point_1; }
-        if (cmd.zone === 2) { state.heater_2 = cmd.value ?? state.heater_2; state.set_point_2 = cmd.value ?? state.set_point_2; }
+        state.heater_1 = cmd.value ?? state.heater_1; state.set_point = cmd.value ?? state.set_point;
         console.log(`[SIM] Heater ${cmd.zone} set to ${cmd.value}°C`);
         break;
 

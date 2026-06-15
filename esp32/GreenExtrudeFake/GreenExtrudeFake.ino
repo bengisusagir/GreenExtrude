@@ -44,21 +44,20 @@ struct SimState {
   float filament_dia;     // mm
   float filament_dia_setting; // mm — target/preset filament diameter (1.75 or 2.85)
   float spool_motor_speed; // RPM
-  float set_point_1;
-  float set_point_2;
+  float set_point;
   bool  running;
   bool  fans_on;           // cooling fans state (true=ON, false=OFF)
 };
 
 SimState state = {
-  180.0,   // heater_1
+  200.0,   // heater_1
   200.0,   // heater_2
   30.0,    // screw_motor_speed
   2.85,    // filament_dia
   2.85,    // filament_dia_setting
   25.0,    // spool_motor_speed
-  220.0,   // set_point_1
-  215.0,   // set_point_2
+  220.0,   // set_point
+
   true,    // running
   true     // fans_on
 };
@@ -71,8 +70,7 @@ struct BufferedTelemetry {
   float filament_diameter;
   float filament_diameter_setting;
   float spool_motor_speed;
-  float set_point_1;
-  float set_point_2;
+  float set_point;
   bool  fans_on;
   unsigned long timestamp_ms;
 };
@@ -187,12 +185,12 @@ float readSpoolMotorSpeed() {
 
 // ─── Actuator / Control Output Actions ───
 
-void controlHeater(int zone, float targetValue) {
+void controlHeater(float targetValue) {
 #if USE_REAL_SENSORS
   // TODO: Implement heater output control logic (e.g., PWM, Solid State Relay, or PID)
 #else
-  if (zone == 1) state.heater_1 = targetValue;
-  if (zone == 2) state.heater_2 = targetValue;
+  state.heater_1 = targetValue;
+  state.heater_2 = targetValue;
 #endif
 }
 
@@ -290,8 +288,7 @@ void publishTelemetry(BufferedTelemetry data) {
   doc["filament_diameter"]        = round(data.filament_diameter * 100) / 100.0;
   doc["filament_diameter_setting"]= round(data.filament_diameter_setting * 100) / 100.0;
   doc["spool_motor_speed"]        = round(data.spool_motor_speed * 100) / 100.0;
-  doc["set_point_1"]              = round(data.set_point_1 * 100) / 100.0;
-  doc["set_point_2"]              = round(data.set_point_2 * 100) / 100.0;
+  doc["set_point"]              = round(data.set_point * 100) / 100.0;
   doc["fans_on"]                  = data.fans_on;
 
   // Preserve generation time by converting timestamp_ms into ISO 8601 format
@@ -324,14 +321,14 @@ void publishTelemetry(BufferedTelemetry data) {
 
 void handleCommand(char* topic, byte* payload, unsigned int length) {
   // Null-terminate the raw payload
-  char buf[256];
+  char buf[512];
   unsigned int len = min(length, (unsigned int)(sizeof(buf) - 1));
   memcpy(buf, payload, len);
   buf[len] = '\0';
 
   Serial.printf("[RX] Command: %s\n", buf);
 
-  StaticJsonDocument<256> doc;
+  StaticJsonDocument<512> doc;
   DeserializationError err = deserializeJson(doc, buf);
   if (err) {
     Serial.printf("[RX] JSON parse error: %s\n", err.c_str());
@@ -341,14 +338,13 @@ void handleCommand(char* topic, byte* payload, unsigned int length) {
   const char* type = doc["type"];
 
   if (strcmp(type, "SET_TEMPERATURE") == 0) {
-    int zone = doc["zone"] | 0;
     float val = doc["value"] | 0.0;
-    controlHeater(zone, val);
+    controlHeater(val);
     preferences.begin("extrude", false);
-    if (zone == 1) { state.set_point_1 = val; preferences.putFloat("sp_1", val); }
-    if (zone == 2) { state.set_point_2 = val; preferences.putFloat("sp_2", val); }
+    state.set_point = val;
+    preferences.putFloat("sp", val);
     preferences.end();
-    Serial.printf("[CMD] Heater %d target temperature -> %.1f C\n", zone, val);
+    Serial.printf("[CMD] Heaters target temperature -> %.1f C\n", val);
 
   } else if (strcmp(type, "SET_SCREW_MOTOR_SPEED") == 0) {
     float val = doc["value"] | 0.0;
@@ -420,8 +416,8 @@ boolean mqttReconnect() {
   Serial.printf("[MQTT] Connecting to broker (%s:%d)...\n", MQTT_BROKER, MQTT_PORT);
 
   // LWT (Last Will and Testament) payload for automatic offline alerts
-  char lwtPayload[64];
-  StaticJsonDocument<64> lwtDoc;
+  char lwtPayload[128];
+  StaticJsonDocument<128> lwtDoc;
   lwtDoc["status"]    = "disconnected";
   lwtDoc["device_id"] = DEVICE_ID;
   serializeJson(lwtDoc, lwtPayload);
@@ -430,10 +426,10 @@ boolean mqttReconnect() {
     Serial.println("[MQTT] Connected!");
 
     // Publish online status
-    StaticJsonDocument<64> statusDoc;
+    StaticJsonDocument<128> statusDoc;
     statusDoc["status"]    = "online";
     statusDoc["device_id"] = DEVICE_ID;
-    char statusPayload[64];
+    char statusPayload[128];
     serializeJson(statusDoc, statusPayload);
     mqtt.publish(TOPIC_STATUS, statusPayload);
 
@@ -449,11 +445,10 @@ boolean mqttReconnect() {
 
 void loadSettings() {
   preferences.begin("extrude", true);
-  state.set_point_1 = preferences.getFloat("sp_1", 220.0f);
-  state.set_point_2 = preferences.getFloat("sp_2", 215.0f);
+  state.set_point = preferences.getFloat("sp", 220.0f);
   
-  state.heater_1 = state.set_point_1;
-  state.heater_2 = state.set_point_2;
+  state.heater_1 = state.set_point;
+  state.heater_2 = state.set_point;
 
   state.screw_motor_speed = preferences.getFloat("screw_spd", 30.0f);
   state.spool_motor_speed = preferences.getFloat("spool_spd", 25.0f);
@@ -461,8 +456,8 @@ void loadSettings() {
   state.filament_dia = (state.screw_motor_speed > 0) ? state.filament_dia_setting : 0.0f;
   state.fans_on = preferences.getBool("fans_on", true);
   preferences.end();
-  Serial.printf("[SETTINGS] Loaded: sp1=%.1f sp2=%.1f | screw=%.0f | spool=%.0f | dia_setting=%.2f | fans=%s\n",
-                state.set_point_1, state.set_point_2,
+  Serial.printf("[SETTINGS] Loaded: sp=%.1f | screw=%.0f | spool=%.0f | dia_setting=%.2f | fans=%s\n",
+                state.set_point,
                 state.screw_motor_speed, state.spool_motor_speed, state.filament_dia_setting,
                 state.fans_on ? "ON" : "OFF");
 }
@@ -529,7 +524,6 @@ void loop() {
         lastReconnectAttemptMs = 0;
       }
     }
-    return; 
   }
 
   // Periodic telemetry generation and buffering
@@ -544,8 +538,7 @@ void loop() {
     newTelemetry.filament_diameter = readFilamentDiameter();
     newTelemetry.filament_diameter_setting = state.filament_dia_setting;
     newTelemetry.spool_motor_speed = readSpoolMotorSpeed();
-    newTelemetry.set_point_1 = state.set_point_1;
-    newTelemetry.set_point_2 = state.set_point_2;
+    newTelemetry.set_point = state.set_point;
     newTelemetry.fans_on = state.fans_on;
     newTelemetry.timestamp_ms = now;
 
@@ -554,7 +547,7 @@ void loop() {
   }
 
   // Send queued data one packet per loop iteration if MQTT is connected
-  if (bufferCount > 0) {
+  if (mqtt.connected() && bufferCount > 0) {
     BufferedTelemetry unsentData;
     if (popFromBuffer(unsentData)) {
       publishTelemetry(unsentData);

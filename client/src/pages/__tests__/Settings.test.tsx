@@ -60,29 +60,31 @@ describe("Settings Page", () => {
     expect(screen.getByText("Spool Motor Speed")).toBeInTheDocument();
   });
 
-  it("CMP-SET-03b: renders temperature set point inputs for 2 zones", () => {
+  it("CMP-SET-03b: renders temperature set point input", () => {
     render(<Settings />);
-    expect(screen.getByLabelText("Zone 1")).toBeInTheDocument();
-    expect(screen.getByLabelText("Zone 2")).toBeInTheDocument();
+    expect(screen.getByLabelText("Set Point")).toBeInTheDocument();
   });
 
-  it("CMP-SET-04: Apply & Start sends temperature set points, motor speeds, then START (5 commands, no PID)", async () => {
+  it("CMP-SET-04: Apply & Start sends temperature set point, motor speeds, fans status, filament diameter, then START (6 commands)", async () => {
     render(<Settings />);
     const applyBtn = screen.getByText("APPLY & START EXTRUSION");
     fireEvent.click(applyBtn);
 
-    expect(mockSendCommand).toHaveBeenCalledTimes(5);
+    expect(mockSendCommand).toHaveBeenCalledTimes(6);
     expect(mockSendCommand).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "SET_TEMPERATURE", zone: 1 })
-    );
-    expect(mockSendCommand).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "SET_TEMPERATURE", zone: 2 })
+      expect.objectContaining({ type: "SET_TEMPERATURE" })
     );
     expect(mockSendCommand).toHaveBeenCalledWith(
       expect.objectContaining({ type: "SET_SCREW_MOTOR_SPEED" })
     );
     expect(mockSendCommand).toHaveBeenCalledWith(
       expect.objectContaining({ type: "SET_SPOOL_MOTOR_SPEED" })
+    );
+    expect(mockSendCommand).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "SET_FANS" })
+    );
+    expect(mockSendCommand).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "SET_FILAMENT_DIAMETER" })
     );
     expect(mockSendCommand).toHaveBeenCalledWith(
       expect.objectContaining({ type: "START" })

@@ -8,8 +8,7 @@ export interface TelemetryData {
   filament_diameter_setting?: number; // the target/preset filament diameter (1.75 or 2.85)
   fans_on?: boolean;              // cooling fans state (true=ON, false=OFF)
   spool_motor_speed: number;
-  set_point_1?: number;
-  set_point_2?: number;
+  set_point?: number;
   timestamp?: string;
 }
 
@@ -59,22 +58,19 @@ export const MQTT_TOPICS = {
 export type FilamentDiameterPreset = 2.85 | 1.75;
 
 export interface FilamentPresetValues {
-  set_point_1: number;
-  set_point_2: number;
+  set_point: number;
   screw_motor_speed: number;
   spool_motor_speed: number;
 }
 
 export const FILAMENT_PRESETS: Record<FilamentDiameterPreset, FilamentPresetValues> = {
   2.85: {
-    set_point_1: 220,
-    set_point_2: 215,
+    set_point: 220,
     screw_motor_speed: 45,
     spool_motor_speed: 25,
   },
   1.75: {
-    set_point_1: 200,
-    set_point_2: 195,
+    set_point: 200,
     screw_motor_speed: 35,
     spool_motor_speed: 20,
   },
