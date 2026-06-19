@@ -41,6 +41,20 @@ export function useWebSocket(): UseWebSocketReturn {
             setTelemetry(data);
             setHistory((prev) => [...prev.slice(-(HISTORY_MAX_LENGTH - 1)), data]);
             recordTelemetryUpdate();
+            if (data && (data.heater_1 > 350 || data.heater_2 > 350)) {
+              if (ws.readyState === WebSocket.OPEN) {
+                console.warn("[WS] High temperature detected. Triggering emergency stop.");
+                ws.send(
+                  JSON.stringify({
+                    type: "command",
+                    payload: {
+                      type: "EMERGENCY_STOP",
+                      timestamp: new Date().toISOString(),
+                    },
+                  })
+                );
+              }
+            }
             break;
           }
           case "history": {

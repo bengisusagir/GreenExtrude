@@ -1,0 +1,11 @@
+{
+  "set_point": 205,
+  "heater_1": 205,
+  "heater_2": 205,
+  "screw_motor_speed": 56,
+  "spool_motor_speed": 20,
+  "filament_diameter_setting": 1.75,
+  "filament_diameter": 1.75,
+  "fans_on": true,
+  "running": true
+}

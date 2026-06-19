@@ -16,6 +16,7 @@
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 #include <Preferences.h>
+#include <MAX6675.h>
 
 // ─── WiFi Settings ───
 #define WIFI_SSID     "WIFI_SSID"
@@ -56,10 +57,9 @@ SimState state = {
   2.85,    // filament_dia
   2.85,    // filament_dia_setting
   25.0,    // spool_motor_speed
-  220.0,   // set_point
-
+  0.0,   // set_point
   true,    // running
-  true     // fans_on
+  false     // fans_on
 };
 
 // ─── Offline Data Tampon (Store and Forward Queue) ───
@@ -121,20 +121,77 @@ Preferences preferences;
 //  Hardware & Sensor Interface Layer
 // ═══════════════════════════════════════════════════════
 
-#define USE_REAL_SENSORS  0  // 1: Use physical sensors/pins, 0: Use simulated fake data
+#define USE_REAL_SENSORS  1  // 1: Use physical sensors/pins, 0: Use simulated fake data
 
 // Define your physical pins and sensor objects here
 #if USE_REAL_SENSORS
-  // Example: #define HEATER_1_PIN A0
-  // Example: #define MOTOR_PWM_PIN 5
-  // Include sensor libraries here (Example: #include <MAX6675.h>)
+  // Real sensor pin definitions
+  #define MOSFET_PIN 32
+  #define SSR_PIN 33
+  #define FILAMENT_PIN 34
+  #define THERMO_CLK 18
+  #define THERMO_DO 19
+  #define THERMO1_CS 21
+  #define THERMO2_CS 22
+
+  // Motor 1 - Screw/Extruder Motor (NEMA 17)
+   #define MOTOR1_STEP_PIN 14
+   #define MOTOR1_DIR_PIN  27
+   #define MOTOR1_EN_PIN   23
+  // Motor 2 - Spool Winder Motor (NEMA 23) 
+
+   #define MOTOR2_STEP_PIN 26
+   #define MOTOR2_DIR_PIN  25
+   #define MOTOR2_EN_PIN   13
+
+  // MAX6675 thermocouple sensor objects
+MAX6675 thermo1(THERMO1_CS, THERMO_DO, THERMO_CLK);
+MAX6675 thermo2(THERMO2_CS, THERMO_DO, THERMO_CLK);
+  // Stepper motor timing state (non-blocking control)
+  unsigned long lastMotor1StepMicros = 0;
+  unsigned long lastMotor2StepMicros = 0;
+  bool motor1StepState = LOW;
+  bool motor2StepState = LOW;
+  int motor1StepDelay = 800;   // microseconds between steps (controls speed)
+  int motor2StepDelay = 800;
+  bool motorsEnabled = true;
+  volatile unsigned long motor1Transitions = 0;
+  volatile unsigned long motor2Transitions = 0;
 #endif
 
 void initHardware() {
 #if USE_REAL_SENSORS
-  // TODO: Configure your pin modes and initialize sensor libraries here
-  // Example: pinMode(MOTOR_PWM_PIN, OUTPUT);
-  // Example: thermocouple.begin();
+  // Stepper motor pins
+  pinMode(MOTOR1_STEP_PIN, OUTPUT);
+  pinMode(MOTOR1_DIR_PIN, OUTPUT);
+  pinMode(MOTOR1_EN_PIN, OUTPUT);
+  pinMode(MOTOR2_STEP_PIN, OUTPUT);
+  pinMode(MOTOR2_DIR_PIN, OUTPUT);
+  pinMode(MOTOR2_EN_PIN, OUTPUT);
+
+  // Power output pins
+  pinMode(MOSFET_PIN, OUTPUT);   // Fan
+  pinMode(SSR_PIN, OUTPUT);      // Heater SSR
+
+  // Filament presence sensor (active-low with internal pullup)
+  pinMode(FILAMENT_PIN, INPUT_PULLUP);
+
+  // Set default motor direction (forward)
+  digitalWrite(MOTOR1_DIR_PIN, HIGH);
+  digitalWrite(MOTOR2_DIR_PIN, HIGH);
+
+  // Enable motor drivers (active-low enable)
+  digitalWrite(MOTOR1_EN_PIN, LOW);
+  digitalWrite(MOTOR2_EN_PIN, LOW);
+
+  // All outputs off at startup
+  digitalWrite(MOSFET_PIN, LOW);
+  digitalWrite(SSR_PIN, LOW);
+
+  thermo1.begin();
+  thermo2.begin();
+
+
   Serial.println("[HARDWARE] Real sensors and hardware interfaces initialized.");
 #else
   Serial.println("[HARDWARE] Simulation mode active. No physical pins initialized.");
@@ -143,7 +200,14 @@ void initHardware() {
 
 float readHeaterTemperature(int zone) {
 #if USE_REAL_SENSORS
-  // TODO: Implement physical temperature reading here (e.g., thermocouple)
+  // Read MAX6675 thermocouple
+    int status1 = thermo1.read();
+    int status2 = thermo2.read();
+    float temp1 = thermo1.getCelsius();
+    float temp2 = thermo2.getCelsius();
+ 
+  if (zone == 1) return temp1;
+  if (zone == 2) return temp2;
   return 0.0;
 #else
   // Simulated data with noise and occasional anomalies
@@ -155,8 +219,28 @@ float readHeaterTemperature(int zone) {
 
 float readScrewMotorSpeed() {
 #if USE_REAL_SENSORS
-  // TODO: Read extruder screw motor speed using an encoder or Hall effect sensor
-  return 0.0;
+  static unsigned long lastCalcMicros = 0;
+  unsigned long nowMicros = micros();
+  
+  if (lastCalcMicros == 0) {
+    lastCalcMicros = nowMicros;
+    return state.screw_motor_speed;
+  }
+  
+  unsigned long elapsedMicros = nowMicros - lastCalcMicros;
+  if (elapsedMicros == 0) return 0.0;
+  
+  float calculatedRPM = 0.0;
+  if (state.screw_motor_speed > 0) {
+    // 1 full step = 2 transitions. Assuming 200 steps/rev.
+    // RPM = (transitions / 400.0) / (elapsedMicros / 60000000.0)
+    // RPM = (transitions * 150000.0) / elapsedMicros
+    calculatedRPM = (float)(motor1Transitions * 150000.0) / elapsedMicros;
+  }
+  
+  motor1Transitions = 0;
+  lastCalcMicros = nowMicros;
+  return calculatedRPM;
 #else
   return maybeAnomaly(addNoise(state.screw_motor_speed, 1.0), state.screw_motor_speed, 80, 0);
 #endif
@@ -164,8 +248,10 @@ float readScrewMotorSpeed() {
 
 float readFilamentDiameter() {
 #if USE_REAL_SENSORS
-  // TODO: Read physical filament diameter sensor value
-  return 0.0;
+  // Digital filament presence sensor (active-low: LOW = filament present)
+  // Returns the configured diameter setting when filament is detected, 0.0 otherwise.
+  bool filamentPresent = (digitalRead(FILAMENT_PIN) == HIGH);
+  return filamentPresent ? state.filament_dia_setting : 0.0;
 #else
   if (state.screw_motor_speed <= 0) {
     return 0.0;
@@ -176,8 +262,28 @@ float readFilamentDiameter() {
 
 float readSpoolMotorSpeed() {
 #if USE_REAL_SENSORS
-  // TODO: Read spool winder motor speed using an encoder
-  return 0.0;
+  static unsigned long lastCalcMicros = 0;
+  unsigned long nowMicros = micros();
+  
+  if (lastCalcMicros == 0) {
+    lastCalcMicros = nowMicros;
+    return state.spool_motor_speed;
+  }
+  
+  unsigned long elapsedMicros = nowMicros - lastCalcMicros;
+  if (elapsedMicros == 0) return 0.0;
+  
+  float calculatedRPM = 0.0;
+  if (state.spool_motor_speed > 0) {
+    // 1 full step = 2 transitions. Assuming 200 steps/rev.
+    // RPM = (transitions / 400.0) / (elapsedMicros / 60000000.0)
+    // RPM = (transitions * 150000.0) / elapsedMicros
+    calculatedRPM = (float)(motor2Transitions * 150000.0) / elapsedMicros;
+  }
+  
+  motor2Transitions = 0;
+  lastCalcMicros = nowMicros;
+  return calculatedRPM;
 #else
   return maybeAnomaly(addNoise(state.spool_motor_speed, 0.5), state.spool_motor_speed, 70, 0);
 #endif
@@ -187,7 +293,18 @@ float readSpoolMotorSpeed() {
 
 void controlHeater(float targetValue) {
 #if USE_REAL_SENSORS
-  // TODO: Implement heater output control logic (e.g., PWM, Solid State Relay, or PID)
+  state.set_point = targetValue;
+  state.heater_1 = targetValue;
+  state.heater_2 = targetValue;
+
+  // Immediate SSR update based on current zone-1 temperature
+  thermo1.read();
+  float currentTemp = thermo1.getCelsius();
+  if (targetValue > 0 && currentTemp < targetValue) {
+    digitalWrite(SSR_PIN, HIGH);
+  } else {
+    digitalWrite(SSR_PIN, LOW);
+  }
 #else
   state.heater_1 = targetValue;
   state.heater_2 = targetValue;
@@ -196,7 +313,17 @@ void controlHeater(float targetValue) {
 
 void controlScrewMotorSpeed(float speedValue) {
 #if USE_REAL_SENSORS
-  // TODO: Output speed control command to physical screw motor driver (e.g., PWM, analogWrite)
+  state.screw_motor_speed = speedValue;
+  if (speedValue > 0) {
+    // Convert RPM to step delay in microseconds.
+    // Assuming 200 steps/rev stepper: delay = 60e6 / (RPM * 200) / 2
+    // The /2 accounts for toggle (HIGH then LOW per full step).
+    motor1StepDelay = (int)(60000000.0 / (speedValue * 200.0 * 2.0));
+    motor1StepDelay = max(motor1StepDelay, 100); // clamp minimum
+    digitalWrite(MOTOR1_EN_PIN, LOW);  // enable driver (active-low)
+  } else {
+    digitalWrite(MOTOR1_EN_PIN, HIGH); // disable driver
+  }
 #else
   state.screw_motor_speed = speedValue;
   state.filament_dia = (speedValue > 0) ? state.filament_dia_setting : 0.0f;
@@ -205,7 +332,14 @@ void controlScrewMotorSpeed(float speedValue) {
 
 void controlSpoolMotorSpeed(float speedValue) {
 #if USE_REAL_SENSORS
-  // TODO: Output speed control command to physical spool motor driver
+  state.spool_motor_speed = speedValue;
+  if (speedValue > 0) {
+    motor2StepDelay = (int)(60000000.0 / (speedValue * 200.0 * 2.0));
+    motor2StepDelay = max(motor2StepDelay, 100);
+    digitalWrite(MOTOR2_EN_PIN, LOW);
+  } else {
+    digitalWrite(MOTOR2_EN_PIN, HIGH);
+  }
 #else
   state.spool_motor_speed = speedValue;
 #endif
@@ -213,7 +347,8 @@ void controlSpoolMotorSpeed(float speedValue) {
 
 void controlFans(bool on) {
 #if USE_REAL_SENSORS
-  // TODO: Output control signal to physical fan relay/driver
+  state.fans_on = on;
+  digitalWrite(MOSFET_PIN, on ? HIGH : LOW);
 #else
   state.fans_on = on;
 #endif
@@ -221,7 +356,20 @@ void controlFans(bool on) {
 
 void executeEmergencyStop() {
 #if USE_REAL_SENSORS
-  // TODO: Implement physical emergency stop logic (immediately shut off all heaters, motors, and fans)
+  // Immediately cut all outputs
+  digitalWrite(SSR_PIN, LOW);         // heater off
+  digitalWrite(MOSFET_PIN, LOW);      // fan off
+  digitalWrite(MOTOR1_EN_PIN, HIGH);  // disable screw motor
+  digitalWrite(MOTOR2_EN_PIN, HIGH);  // disable spool motor
+
+  // Update state to reflect shutdown
+  state.running = false;
+  state.screw_motor_speed = 0;
+  state.spool_motor_speed = 0;
+  state.set_point = 0;
+  state.heater_1 = 0;
+  state.heater_2 = 0;
+  state.fans_on = false;
 #else
   state.running = false;
   state.screw_motor_speed = 0;
@@ -445,7 +593,7 @@ boolean mqttReconnect() {
 
 void loadSettings() {
   preferences.begin("extrude", true);
-  state.set_point = preferences.getFloat("sp", 220.0f);
+  state.set_point = preferences.getFloat("sp", 0.0f);
   
   state.heater_1 = state.set_point;
   state.heater_2 = state.set_point;
@@ -478,6 +626,10 @@ void setup() {
   initHardware(); // Initialize hardware interfaces and pin modes
   loadSettings(); // Load values from Non-Volatile Storage (Preferences)
 
+  // Apply default/loaded speeds to start motors at boot if speed > 0
+  controlScrewMotorSpeed(state.screw_motor_speed);
+  controlSpoolMotorSpeed(state.spool_motor_speed);
+
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
 
@@ -491,6 +643,42 @@ void setup() {
 }
 
 void loop() {
+  // ─── Real-hardware control loops (Non-blocking, run independently of network state) ───
+#if USE_REAL_SENSORS
+  {
+    static unsigned long lastThermostatMs = 0;
+    if (millis() - lastThermostatMs > 1000) {
+      lastThermostatMs = millis();
+      thermo1.read();
+      float currentT1 = thermo1.getCelsius();
+
+      if (state.set_point > 0 && currentT1 < state.set_point) {
+        digitalWrite(SSR_PIN, HIGH);
+      } else {
+        digitalWrite(SSR_PIN, LOW);
+      }
+    }
+  }
+
+  // Non-blocking stepper motor stepping
+  if (state.screw_motor_speed > 0) {
+    if (micros() - lastMotor1StepMicros >= (unsigned long)motor1StepDelay) {
+      lastMotor1StepMicros = micros();
+      motor1StepState = !motor1StepState;
+      digitalWrite(MOTOR1_STEP_PIN, motor1StepState);
+      motor1Transitions++;
+    }
+  }
+  if (state.spool_motor_speed > 0) {
+    if (micros() - lastMotor2StepMicros >= (unsigned long)motor2StepDelay) {
+      lastMotor2StepMicros = micros();
+      motor2StepState = !motor2StepState;
+      digitalWrite(MOTOR2_STEP_PIN, motor2StepState);
+      motor2Transitions++;
+    }
+  }
+#endif
+
   if (mqtt.connected()) {
     mqtt.loop();
   }

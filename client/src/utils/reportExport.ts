@@ -17,7 +17,7 @@ export interface QualityStats {
 export function computeQualityStats(history: TelemetryData[]): QualityStats | null {
   const diameters = history
     .map((h) => h.filament_diameter)
-    .filter((d): d is number => d !== undefined && d !== null && d > 0);
+    .filter((d): d is number => d !== undefined && d !== null && d >= 0);
 
   if (diameters.length === 0) return null;
 

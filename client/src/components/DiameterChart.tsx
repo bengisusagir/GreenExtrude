@@ -187,6 +187,13 @@ export default function DiameterChart({
               ".MuiLineElement-root": {
                 strokeWidth: 2,
               },
+              ".MuiLineElement-series-diameter": {
+                strokeWidth: 3,
+              },
+              ".MuiLineElement-series-target": {
+                strokeWidth: 2,
+                strokeDasharray: "5 5",
+              },
               ".MuiMarkElement-root": {
                 fill: "#2ECC71",
                 stroke: "#1A2035",
