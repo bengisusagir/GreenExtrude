@@ -16,6 +16,7 @@
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 #include <Preferences.h>
+#include <MAX6675.h>
 
 // ─── WiFi Settings ───
 #define WIFI_SSID     "WIFI_SSID"
@@ -38,51 +39,39 @@
 
 // ─── Simulated System State ───
 struct SimState {
-  float heater_1;        // °C — feed zone
-  float heater_2;        // °C — melt zone
-  float heater_3;        // °C — nozzle zone
-  float motor_speed;     // RPM
-  float filament_dia;    // mm
-  float winder_speed;    // RPM
-  float set_point_1;
-  float set_point_2;
-  float set_point_3;
-  float kp;
-  float ki;
-  float kd;
+  float heater_1;         // °C — feed zone
+  float heater_2;         // °C — melt zone
+  float screw_motor_speed; // RPM
+  float filament_dia;     // mm
+  float filament_dia_setting; // mm — target/preset filament diameter (1.75 or 2.85)
+  float spool_motor_speed; // RPM
+  float set_point;
   bool  running;
+  bool  fans_on;           // cooling fans state (true=ON, false=OFF)
 };
 
 SimState state = {
-  180.0,   // heater_1
+  200.0,   // heater_1
   200.0,   // heater_2
-  195.0,   // heater_3
-  30.0,    // motor_speed
+  30.0,    // screw_motor_speed
   2.85,    // filament_dia
-  25.0,    // winder_speed
-  220.0,   // set_point_1
-  215.0,   // set_point_2
-  210.0,   // set_point_3
-  1.20,    // kp
-  0.05,    // ki
-  0.10,    // kd
-  true     // running
+  2.85,    // filament_dia_setting
+  25.0,    // spool_motor_speed
+  0.0,   // set_point
+  true,    // running
+  false     // fans_on
 };
 
 // ─── Offline Data Tampon (Store and Forward Queue) ───
 struct BufferedTelemetry {
   float heater_1;
   float heater_2;
-  float heater_3;
-  float motor_speed;
+  float screw_motor_speed;
   float filament_diameter;
-  float winder_speed;
-  float set_point_1;
-  float set_point_2;
-  float set_point_3;
-  float kp;
-  float ki;
-  float kd;
+  float filament_diameter_setting;
+  float spool_motor_speed;
+  float set_point;
+  bool  fans_on;
   unsigned long timestamp_ms;
 };
 
@@ -132,20 +121,77 @@ Preferences preferences;
 //  Hardware & Sensor Interface Layer
 // ═══════════════════════════════════════════════════════
 
-#define USE_REAL_SENSORS  0  // 1: Use physical sensors/pins, 0: Use simulated fake data
+#define USE_REAL_SENSORS  1  // 1: Use physical sensors/pins, 0: Use simulated fake data
 
 // Define your physical pins and sensor objects here
 #if USE_REAL_SENSORS
-  // Example: #define HEATER_1_PIN A0
-  // Example: #define MOTOR_PWM_PIN 5
-  // Include sensor libraries here (Example: #include <MAX6675.h>)
+  // Real sensor pin definitions
+  #define MOSFET_PIN 32
+  #define SSR_PIN 33
+  #define FILAMENT_PIN 34
+  #define THERMO_CLK 18
+  #define THERMO_DO 19
+  #define THERMO1_CS 21
+  #define THERMO2_CS 22
+
+  // Motor 1 - Screw/Extruder Motor (NEMA 17)
+   #define MOTOR1_STEP_PIN 14
+   #define MOTOR1_DIR_PIN  27
+   #define MOTOR1_EN_PIN   23
+  // Motor 2 - Spool Winder Motor (NEMA 23) 
+
+   #define MOTOR2_STEP_PIN 26
+   #define MOTOR2_DIR_PIN  25
+   #define MOTOR2_EN_PIN   13
+
+  // MAX6675 thermocouple sensor objects
+MAX6675 thermo1(THERMO1_CS, THERMO_DO, THERMO_CLK);
+MAX6675 thermo2(THERMO2_CS, THERMO_DO, THERMO_CLK);
+  // Stepper motor timing state (non-blocking control)
+  unsigned long lastMotor1StepMicros = 0;
+  unsigned long lastMotor2StepMicros = 0;
+  bool motor1StepState = LOW;
+  bool motor2StepState = LOW;
+  int motor1StepDelay = 800;   // microseconds between steps (controls speed)
+  int motor2StepDelay = 800;
+  bool motorsEnabled = true;
+  volatile unsigned long motor1Transitions = 0;
+  volatile unsigned long motor2Transitions = 0;
 #endif
 
 void initHardware() {
 #if USE_REAL_SENSORS
-  // TODO: Configure your pin modes and initialize sensor libraries here
-  // Example: pinMode(MOTOR_PWM_PIN, OUTPUT);
-  // Example: thermocouple.begin();
+  // Stepper motor pins
+  pinMode(MOTOR1_STEP_PIN, OUTPUT);
+  pinMode(MOTOR1_DIR_PIN, OUTPUT);
+  pinMode(MOTOR1_EN_PIN, OUTPUT);
+  pinMode(MOTOR2_STEP_PIN, OUTPUT);
+  pinMode(MOTOR2_DIR_PIN, OUTPUT);
+  pinMode(MOTOR2_EN_PIN, OUTPUT);
+
+  // Power output pins
+  pinMode(MOSFET_PIN, OUTPUT);   // Fan
+  pinMode(SSR_PIN, OUTPUT);      // Heater SSR
+
+  // Filament presence sensor (active-low with internal pullup)
+  pinMode(FILAMENT_PIN, INPUT_PULLUP);
+
+  // Set default motor direction (forward)
+  digitalWrite(MOTOR1_DIR_PIN, HIGH);
+  digitalWrite(MOTOR2_DIR_PIN, HIGH);
+
+  // Enable motor drivers (active-low enable)
+  digitalWrite(MOTOR1_EN_PIN, LOW);
+  digitalWrite(MOTOR2_EN_PIN, LOW);
+
+  // All outputs off at startup
+  digitalWrite(MOSFET_PIN, LOW);
+  digitalWrite(SSR_PIN, LOW);
+
+  thermo1.begin();
+  thermo2.begin();
+
+
   Serial.println("[HARDWARE] Real sensors and hardware interfaces initialized.");
 #else
   Serial.println("[HARDWARE] Simulation mode active. No physical pins initialized.");
@@ -154,87 +200,181 @@ void initHardware() {
 
 float readHeaterTemperature(int zone) {
 #if USE_REAL_SENSORS
-  // TODO: Implement physical temperature reading here (e.g., thermocouple)
-  // Example:
-  // if (zone == 1) return thermocouple1.readCelsius();
-  // if (zone == 2) return thermocouple2.readCelsius();
-  // if (zone == 3) return thermocouple3.readCelsius();
+  // Read MAX6675 thermocouple
+    int status1 = thermo1.read();
+    int status2 = thermo2.read();
+    float temp1 = thermo1.getCelsius();
+    float temp2 = thermo2.getCelsius();
+ 
+  if (zone == 1) return temp1;
+  if (zone == 2) return temp2;
   return 0.0;
 #else
   // Simulated data with noise and occasional anomalies
   if (zone == 1) return maybeAnomaly(addNoise(state.heater_1, 3.0), state.heater_1, 245, 50);
   if (zone == 2) return maybeAnomaly(addNoise(state.heater_2, 2.0), state.heater_2, 250, 40);
-  if (zone == 3) return maybeAnomaly(addNoise(state.heater_3, 2.5), state.heater_3, 240, 55);
   return 0.0;
 #endif
 }
 
-float readMotorSpeed() {
+float readScrewMotorSpeed() {
 #if USE_REAL_SENSORS
-  // TODO: Read extruder motor speed using an encoder or Hall effect sensor
-  return 0.0;
+  static unsigned long lastCalcMicros = 0;
+  unsigned long nowMicros = micros();
+  
+  if (lastCalcMicros == 0) {
+    lastCalcMicros = nowMicros;
+    return state.screw_motor_speed;
+  }
+  
+  unsigned long elapsedMicros = nowMicros - lastCalcMicros;
+  if (elapsedMicros == 0) return 0.0;
+  
+  float calculatedRPM = 0.0;
+  if (state.screw_motor_speed > 0) {
+    // 1 full step = 2 transitions. Assuming 200 steps/rev.
+    // RPM = (transitions / 400.0) / (elapsedMicros / 60000000.0)
+    // RPM = (transitions * 150000.0) / elapsedMicros
+    calculatedRPM = (float)(motor1Transitions * 150000.0) / elapsedMicros;
+  }
+  
+  motor1Transitions = 0;
+  lastCalcMicros = nowMicros;
+  return calculatedRPM;
 #else
-  return maybeAnomaly(addNoise(state.motor_speed, 1.0), state.motor_speed, 80, 0);
+  return maybeAnomaly(addNoise(state.screw_motor_speed, 1.0), state.screw_motor_speed, 80, 0);
 #endif
 }
 
 float readFilamentDiameter() {
 #if USE_REAL_SENSORS
-  // TODO: Read physical filament diameter sensor value
-  return 0.0;
+  // Digital filament presence sensor (active-low: LOW = filament present)
+  // Returns the configured diameter setting when filament is detected, 0.0 otherwise.
+  bool filamentPresent = (digitalRead(FILAMENT_PIN) == HIGH);
+  return filamentPresent ? state.filament_dia_setting : 0.0;
 #else
-  if (state.motor_speed <= 0) {
+  if (state.screw_motor_speed <= 0) {
     return 0.0;
   }
   return maybeAnomaly(addNoise(state.filament_dia, 0.08), state.filament_dia, 3.25, 2.50);
 #endif
 }
 
-float readWinderSpeed() {
+float readSpoolMotorSpeed() {
 #if USE_REAL_SENSORS
-  // TODO: Read winder motor speed using an encoder
-  return 0.0;
+  static unsigned long lastCalcMicros = 0;
+  unsigned long nowMicros = micros();
+  
+  if (lastCalcMicros == 0) {
+    lastCalcMicros = nowMicros;
+    return state.spool_motor_speed;
+  }
+  
+  unsigned long elapsedMicros = nowMicros - lastCalcMicros;
+  if (elapsedMicros == 0) return 0.0;
+  
+  float calculatedRPM = 0.0;
+  if (state.spool_motor_speed > 0) {
+    // 1 full step = 2 transitions. Assuming 200 steps/rev.
+    // RPM = (transitions / 400.0) / (elapsedMicros / 60000000.0)
+    // RPM = (transitions * 150000.0) / elapsedMicros
+    calculatedRPM = (float)(motor2Transitions * 150000.0) / elapsedMicros;
+  }
+  
+  motor2Transitions = 0;
+  lastCalcMicros = nowMicros;
+  return calculatedRPM;
 #else
-  return maybeAnomaly(addNoise(state.winder_speed, 0.5), state.winder_speed, 70, 0);
+  return maybeAnomaly(addNoise(state.spool_motor_speed, 0.5), state.spool_motor_speed, 70, 0);
 #endif
 }
 
 // ─── Actuator / Control Output Actions ───
 
-void controlHeater(int zone, float targetValue) {
+void controlHeater(float targetValue) {
 #if USE_REAL_SENSORS
-  // TODO: Implement heater output control logic (e.g., PWM, Solid State Relay, or PID)
+  state.set_point = targetValue;
+  state.heater_1 = targetValue;
+  state.heater_2 = targetValue;
+
+  // Immediate SSR update based on current zone-1 temperature
+  thermo1.read();
+  float currentTemp = thermo1.getCelsius();
+  if (targetValue > 0 && currentTemp < targetValue) {
+    digitalWrite(SSR_PIN, HIGH);
+  } else {
+    digitalWrite(SSR_PIN, LOW);
+  }
 #else
-  if (zone == 1) state.heater_1 = targetValue;
-  if (zone == 2) state.heater_2 = targetValue;
-  if (zone == 3) state.heater_3 = targetValue;
+  state.heater_1 = targetValue;
+  state.heater_2 = targetValue;
 #endif
 }
 
-void controlMotorSpeed(float speedValue) {
+void controlScrewMotorSpeed(float speedValue) {
 #if USE_REAL_SENSORS
-  // TODO: Output speed control command to physical motor driver (e.g., PWM, analogWrite)
+  state.screw_motor_speed = speedValue;
+  if (speedValue > 0) {
+    // Convert RPM to step delay in microseconds.
+    // Assuming 200 steps/rev stepper: delay = 60e6 / (RPM * 200) / 2
+    // The /2 accounts for toggle (HIGH then LOW per full step).
+    motor1StepDelay = (int)(60000000.0 / (speedValue * 200.0 * 2.0));
+    motor1StepDelay = max(motor1StepDelay, 100); // clamp minimum
+    digitalWrite(MOTOR1_EN_PIN, LOW);  // enable driver (active-low)
+  } else {
+    digitalWrite(MOTOR1_EN_PIN, HIGH); // disable driver
+  }
 #else
-  state.motor_speed = speedValue;
-  state.filament_dia = (speedValue > 0) ? 2.85f : 0.0f;
+  state.screw_motor_speed = speedValue;
+  state.filament_dia = (speedValue > 0) ? state.filament_dia_setting : 0.0f;
 #endif
 }
 
-void controlWinderSpeed(float speedValue) {
+void controlSpoolMotorSpeed(float speedValue) {
 #if USE_REAL_SENSORS
-  // TODO: Output speed control command to physical winder motor driver
+  state.spool_motor_speed = speedValue;
+  if (speedValue > 0) {
+    motor2StepDelay = (int)(60000000.0 / (speedValue * 200.0 * 2.0));
+    motor2StepDelay = max(motor2StepDelay, 100);
+    digitalWrite(MOTOR2_EN_PIN, LOW);
+  } else {
+    digitalWrite(MOTOR2_EN_PIN, HIGH);
+  }
 #else
-  state.winder_speed = speedValue;
+  state.spool_motor_speed = speedValue;
+#endif
+}
+
+void controlFans(bool on) {
+#if USE_REAL_SENSORS
+  state.fans_on = on;
+  digitalWrite(MOSFET_PIN, on ? HIGH : LOW);
+#else
+  state.fans_on = on;
 #endif
 }
 
 void executeEmergencyStop() {
 #if USE_REAL_SENSORS
-  // TODO: Implement physical emergency stop logic (immediately shut off all heaters and motors)
+  // Immediately cut all outputs
+  digitalWrite(SSR_PIN, LOW);         // heater off
+  digitalWrite(MOSFET_PIN, LOW);      // fan off
+  digitalWrite(MOTOR1_EN_PIN, HIGH);  // disable screw motor
+  digitalWrite(MOTOR2_EN_PIN, HIGH);  // disable spool motor
+
+  // Update state to reflect shutdown
+  state.running = false;
+  state.screw_motor_speed = 0;
+  state.spool_motor_speed = 0;
+  state.set_point = 0;
+  state.heater_1 = 0;
+  state.heater_2 = 0;
+  state.fans_on = false;
 #else
   state.running = false;
-  state.motor_speed = 0;
-  state.winder_speed = 0;
+  state.screw_motor_speed = 0;
+  state.spool_motor_speed = 0;
+  state.fans_on = false;
 #endif
 }
 
@@ -288,20 +428,16 @@ void setupWiFi() {
 
 void publishTelemetry(BufferedTelemetry data) {
   // Build JSON payload matching the TelemetryData schema exactly
-  StaticJsonDocument<512> doc;
-  doc["device_id"]          = DEVICE_ID;
-  doc["heater_1"]           = round(data.heater_1 * 100) / 100.0;
-  doc["heater_2"]           = round(data.heater_2 * 100) / 100.0;
-  doc["heater_3"]           = round(data.heater_3 * 100) / 100.0;
-  doc["motor_speed"]        = round(data.motor_speed * 100) / 100.0;
-  doc["filament_diameter"]  = round(data.filament_diameter * 100) / 100.0;
-  doc["winder_speed"]       = round(data.winder_speed * 100) / 100.0;
-  doc["set_point_1"]        = round(data.set_point_1 * 100) / 100.0;
-  doc["set_point_2"]        = round(data.set_point_2 * 100) / 100.0;
-  doc["set_point_3"]        = round(data.set_point_3 * 100) / 100.0;
-  doc["kp"]                 = round(data.kp * 100) / 100.0;
-  doc["ki"]                 = round(data.ki * 100) / 100.0;
-  doc["kd"]                 = round(data.kd * 100) / 100.0;
+  StaticJsonDocument<768> doc;
+  doc["device_id"]                = DEVICE_ID;
+  doc["heater_1"]                 = round(data.heater_1 * 100) / 100.0;
+  doc["heater_2"]                 = round(data.heater_2 * 100) / 100.0;
+  doc["screw_motor_speed"]        = round(data.screw_motor_speed * 100) / 100.0;
+  doc["filament_diameter"]        = round(data.filament_diameter * 100) / 100.0;
+  doc["filament_diameter_setting"]= round(data.filament_diameter_setting * 100) / 100.0;
+  doc["spool_motor_speed"]        = round(data.spool_motor_speed * 100) / 100.0;
+  doc["set_point"]              = round(data.set_point * 100) / 100.0;
+  doc["fans_on"]                  = data.fans_on;
 
   // Preserve generation time by converting timestamp_ms into ISO 8601 format
   char ts[25];
@@ -312,17 +448,18 @@ void publishTelemetry(BufferedTelemetry data) {
            (data.timestamp_ms / 1000) % 60);
   doc["timestamp"] = ts;
 
-  char payload[512];
+  char payload[768];
   serializeJson(doc, payload);
 
   bool isHistorical = (millis() - data.timestamp_ms > 2000);
   if (mqtt.publish(TOPIC_TELEMETRY, payload)) {
     lastSuccessfulPublishMs = millis();
-    Serial.printf("[TX%s] t1=%.1f t2=%.1f t3=%.1f | motor=%.0f | dia=%.2f | winder=%.0f\n",
+    Serial.printf("[TX%s] t1=%.1f t2=%.1f | screw=%.0f | dia=%.2f | spool=%.0f\n",
                   isHistorical ? "-OFFLINE" : "",
-                  data.heater_1, data.heater_2, data.heater_3, data.motor_speed, data.filament_diameter, data.winder_speed);
+                  data.heater_1, data.heater_2, data.screw_motor_speed, data.filament_diameter, data.spool_motor_speed);
   } else {
-    Serial.println("[TX] Transmission FAILED!");
+    Serial.println("[TX] Transmission FAILED! Pushing back to buffer...");
+    pushToBuffer(data);
   }
 }
 
@@ -332,14 +469,14 @@ void publishTelemetry(BufferedTelemetry data) {
 
 void handleCommand(char* topic, byte* payload, unsigned int length) {
   // Null-terminate the raw payload
-  char buf[256];
+  char buf[512];
   unsigned int len = min(length, (unsigned int)(sizeof(buf) - 1));
   memcpy(buf, payload, len);
   buf[len] = '\0';
 
   Serial.printf("[RX] Command: %s\n", buf);
 
-  StaticJsonDocument<256> doc;
+  StaticJsonDocument<512> doc;
   DeserializationError err = deserializeJson(doc, buf);
   if (err) {
     Serial.printf("[RX] JSON parse error: %s\n", err.c_str());
@@ -349,31 +486,45 @@ void handleCommand(char* topic, byte* payload, unsigned int length) {
   const char* type = doc["type"];
 
   if (strcmp(type, "SET_TEMPERATURE") == 0) {
-    int zone = doc["zone"] | 0;
     float val = doc["value"] | 0.0;
-    controlHeater(zone, val);
+    controlHeater(val);
     preferences.begin("extrude", false);
-    if (zone == 1) { state.set_point_1 = val; preferences.putFloat("sp_1", val); }
-    if (zone == 2) { state.set_point_2 = val; preferences.putFloat("sp_2", val); }
-    if (zone == 3) { state.set_point_3 = val; preferences.putFloat("sp_3", val); }
+    state.set_point = val;
+    preferences.putFloat("sp", val);
     preferences.end();
-    Serial.printf("[CMD] Heater %d target temperature -> %.1f C\n", zone, val);
+    Serial.printf("[CMD] Heaters target temperature -> %.1f C\n", val);
 
-  } else if (strcmp(type, "SET_MOTOR_SPEED") == 0) {
+  } else if (strcmp(type, "SET_SCREW_MOTOR_SPEED") == 0) {
     float val = doc["value"] | 0.0;
-    controlMotorSpeed(val);
+    controlScrewMotorSpeed(val);
     preferences.begin("extrude", false);
-    preferences.putFloat("m_spd", val);
+    preferences.putFloat("screw_spd", val);
     preferences.end();
-    Serial.printf("[CMD] Extruder motor target speed -> %.0f RPM\n", val);
+    Serial.printf("[CMD] Screw motor target speed -> %.0f RPM\n", val);
 
-  } else if (strcmp(type, "SET_WINDER_SPEED") == 0) {
+  } else if (strcmp(type, "SET_SPOOL_MOTOR_SPEED") == 0) {
     float val = doc["value"] | 0.0;
-    controlWinderSpeed(val);
+    controlSpoolMotorSpeed(val);
     preferences.begin("extrude", false);
-    preferences.putFloat("w_spd", val);
+    preferences.putFloat("spool_spd", val);
     preferences.end();
-    Serial.printf("[CMD] Winder target speed -> %.0f RPM\n", val);
+    Serial.printf("[CMD] Spool motor target speed -> %.0f RPM\n", val);
+
+  } else if (strcmp(type, "SET_FILAMENT_DIAMETER") == 0) {
+    float val = doc["value"] | 2.85;
+    state.filament_dia_setting = val;
+    preferences.begin("extrude", false);
+    preferences.putFloat("fil_dia_set", val);
+    preferences.end();
+    Serial.printf("[CMD] Filament diameter setting -> %.2f mm\n", val);
+
+  } else if (strcmp(type, "SET_FANS") == 0) {
+    int val = doc["value"] | 1;
+    controlFans(val != 0);
+    preferences.begin("extrude", false);
+    preferences.putBool("fans_on", val != 0);
+    preferences.end();
+    Serial.printf("[CMD] Fans -> %s\n", val ? "ON" : "OFF");
 
   } else if (strcmp(type, "EMERGENCY_STOP") == 0) {
     executeEmergencyStop();
@@ -382,29 +533,19 @@ void handleCommand(char* topic, byte* payload, unsigned int length) {
   } else if (strcmp(type, "START") == 0) {
     state.running = true;
     preferences.begin("extrude", true);
-    float savedMotor = preferences.getFloat("m_spd", 0.0f);
-    float savedWinder = preferences.getFloat("w_spd", 0.0f);
+    float savedScrew = preferences.getFloat("screw_spd", 0.0f);
+    float savedSpool = preferences.getFloat("spool_spd", 0.0f);
     preferences.end();
-    controlMotorSpeed(savedMotor);
-    controlWinderSpeed(savedWinder);
-    Serial.printf("[CMD] System started. Resumed motor=%.0f RPM, winder=%.0f RPM\n", savedMotor, savedWinder);
+    controlScrewMotorSpeed(savedScrew);
+    controlSpoolMotorSpeed(savedSpool);
+    Serial.printf("[CMD] System started. Resumed screw=%.0f RPM, spool=%.0f RPM\n", savedScrew, savedSpool);
 
   } else if (strcmp(type, "STOP") == 0) {
     state.running = false;
-    controlMotorSpeed(0);
-    controlWinderSpeed(0);
+    controlScrewMotorSpeed(0);
+    controlSpoolMotorSpeed(0);
+    controlFans(false);
     Serial.println("[CMD] System stopped");
-
-  } else if (strcmp(type, "SET_PID") == 0) {
-    int pidZone = doc["zone"] | 0;
-    float pidVal = doc["value"] | 0.0;
-    preferences.begin("extrude", false);
-    if (pidZone == 1) { state.kp = pidVal; preferences.putFloat("kp", pidVal); }
-    if (pidZone == 2) { state.ki = pidVal; preferences.putFloat("ki", pidVal); }
-    if (pidZone == 3) { state.kd = pidVal; preferences.putFloat("kd", pidVal); }
-    preferences.end();
-    const char* pidLabel = pidZone == 1 ? "P" : pidZone == 2 ? "I" : "D";
-    Serial.printf("[CMD] PID %s-Gain -> %.2f\n", pidLabel, pidVal);
 
   } else {
     Serial.printf("[CMD] Unknown command: %s\n", type);
@@ -423,8 +564,8 @@ boolean mqttReconnect() {
   Serial.printf("[MQTT] Connecting to broker (%s:%d)...\n", MQTT_BROKER, MQTT_PORT);
 
   // LWT (Last Will and Testament) payload for automatic offline alerts
-  char lwtPayload[64];
-  StaticJsonDocument<64> lwtDoc;
+  char lwtPayload[128];
+  StaticJsonDocument<128> lwtDoc;
   lwtDoc["status"]    = "disconnected";
   lwtDoc["device_id"] = DEVICE_ID;
   serializeJson(lwtDoc, lwtPayload);
@@ -433,10 +574,10 @@ boolean mqttReconnect() {
     Serial.println("[MQTT] Connected!");
 
     // Publish online status
-    StaticJsonDocument<64> statusDoc;
+    StaticJsonDocument<128> statusDoc;
     statusDoc["status"]    = "online";
     statusDoc["device_id"] = DEVICE_ID;
-    char statusPayload[64];
+    char statusPayload[128];
     serializeJson(statusDoc, statusPayload);
     mqtt.publish(TOPIC_STATUS, statusPayload);
 
@@ -452,26 +593,21 @@ boolean mqttReconnect() {
 
 void loadSettings() {
   preferences.begin("extrude", true);
-  state.set_point_1 = preferences.getFloat("sp_1", 0.0f);
-  state.set_point_2 = preferences.getFloat("sp_2", 0.0f);
-  state.set_point_3 = preferences.getFloat("sp_3", 0.0f);
+  state.set_point = preferences.getFloat("sp", 0.0f);
   
-  state.heater_1 = state.set_point_1;
-  state.heater_2 = state.set_point_2;
-  state.heater_3 = state.set_point_3;
+  state.heater_1 = state.set_point;
+  state.heater_2 = state.set_point;
 
-  state.motor_speed = preferences.getFloat("m_spd", 0.0f);
-  state.winder_speed = preferences.getFloat("w_spd", 0.0f);
-  state.filament_dia = (state.motor_speed > 0) ? 2.85f : 0.0f;
-
-  state.kp = preferences.getFloat("kp", 0.0f);
-  state.ki = preferences.getFloat("ki", 0.0f);
-  state.kd = preferences.getFloat("kd", 0.0f);
+  state.screw_motor_speed = preferences.getFloat("screw_spd", 30.0f);
+  state.spool_motor_speed = preferences.getFloat("spool_spd", 25.0f);
+  state.filament_dia_setting = preferences.getFloat("fil_dia_set", 2.85f);
+  state.filament_dia = (state.screw_motor_speed > 0) ? state.filament_dia_setting : 0.0f;
+  state.fans_on = preferences.getBool("fans_on", true);
   preferences.end();
-  Serial.printf("[SETTINGS] Loaded: sp1=%.1f sp2=%.1f sp3=%.1f | motor=%.0f | winder=%.0f | kp=%.2f ki=%.2f kd=%.2f\n",
-                state.set_point_1, state.set_point_2, state.set_point_3,
-                state.motor_speed, state.winder_speed,
-                state.kp, state.ki, state.kd);
+  Serial.printf("[SETTINGS] Loaded: sp=%.1f | screw=%.0f | spool=%.0f | dia_setting=%.2f | fans=%s\n",
+                state.set_point,
+                state.screw_motor_speed, state.spool_motor_speed, state.filament_dia_setting,
+                state.fans_on ? "ON" : "OFF");
 }
 
 // ═══════════════════════════════════════════════════════
@@ -490,19 +626,63 @@ void setup() {
   initHardware(); // Initialize hardware interfaces and pin modes
   loadSettings(); // Load values from Non-Volatile Storage (Preferences)
 
+  // Apply default/loaded speeds to start motors at boot if speed > 0
+  controlScrewMotorSpeed(state.screw_motor_speed);
+  controlSpoolMotorSpeed(state.spool_motor_speed);
+
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
 
   setupWiFi();
 
   mqtt.setServer(MQTT_BROKER, MQTT_PORT);
-  mqtt.setBufferSize(512); // Increase buffer size to handle larger JSON payloads
+  mqtt.setBufferSize(1024);
   mqtt.setKeepAlive(30); // 30s Keep-alive protects against network jitter
   mqtt.setCallback(handleCommand);
   mqttReconnect();
 }
 
 void loop() {
+  // ─── Real-hardware control loops (Non-blocking, run independently of network state) ───
+#if USE_REAL_SENSORS
+  {
+    static unsigned long lastThermostatMs = 0;
+    if (millis() - lastThermostatMs > 1000) {
+      lastThermostatMs = millis();
+      thermo1.read();
+      float currentT1 = thermo1.getCelsius();
+
+      if (state.set_point > 0 && currentT1 < state.set_point) {
+        digitalWrite(SSR_PIN, HIGH);
+      } else {
+        digitalWrite(SSR_PIN, LOW);
+      }
+    }
+  }
+
+  // Non-blocking stepper motor stepping
+  if (state.screw_motor_speed > 0) {
+    if (micros() - lastMotor1StepMicros >= (unsigned long)motor1StepDelay) {
+      lastMotor1StepMicros = micros();
+      motor1StepState = !motor1StepState;
+      digitalWrite(MOTOR1_STEP_PIN, motor1StepState);
+      motor1Transitions++;
+    }
+  }
+  if (state.spool_motor_speed > 0) {
+    if (micros() - lastMotor2StepMicros >= (unsigned long)motor2StepDelay) {
+      lastMotor2StepMicros = micros();
+      motor2StepState = !motor2StepState;
+      digitalWrite(MOTOR2_STEP_PIN, motor2StepState);
+      motor2Transitions++;
+    }
+  }
+#endif
+
+  if (mqtt.connected()) {
+    mqtt.loop();
+  }
+
   // ─── Built-in LED: OK = solid, ANY problem = blink ───
   unsigned long sinceLastPublish = millis() - lastSuccessfulPublishMs;
   if (sinceLastPublish < 1500) {
@@ -532,8 +712,6 @@ void loop() {
         lastReconnectAttemptMs = 0;
       }
     }
-  } else {
-    mqtt.loop();
   }
 
   // Periodic telemetry generation and buffering
@@ -544,16 +722,12 @@ void loop() {
     
     newTelemetry.heater_1 = readHeaterTemperature(1);
     newTelemetry.heater_2 = readHeaterTemperature(2);
-    newTelemetry.heater_3 = readHeaterTemperature(3);
-    newTelemetry.motor_speed = readMotorSpeed();
+    newTelemetry.screw_motor_speed = readScrewMotorSpeed();
     newTelemetry.filament_diameter = readFilamentDiameter();
-    newTelemetry.winder_speed = readWinderSpeed();
-    newTelemetry.set_point_1 = state.set_point_1;
-    newTelemetry.set_point_2 = state.set_point_2;
-    newTelemetry.set_point_3 = state.set_point_3;
-    newTelemetry.kp = state.kp;
-    newTelemetry.ki = state.ki;
-    newTelemetry.kd = state.kd;
+    newTelemetry.filament_diameter_setting = state.filament_dia_setting;
+    newTelemetry.spool_motor_speed = readSpoolMotorSpeed();
+    newTelemetry.set_point = state.set_point;
+    newTelemetry.fans_on = state.fans_on;
     newTelemetry.timestamp_ms = now;
 
     pushToBuffer(newTelemetry);
@@ -565,10 +739,6 @@ void loop() {
     BufferedTelemetry unsentData;
     if (popFromBuffer(unsentData)) {
       publishTelemetry(unsentData);
-      // Small delay prevents overwhelming the broker during burst transmissions
-      if (bufferCount > 0) {
-        delay(30);
-      }
     }
   }
 }

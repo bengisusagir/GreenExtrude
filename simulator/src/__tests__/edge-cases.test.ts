@@ -92,10 +92,10 @@ describe("generateTelemetry edge cases", () => {
     const zeroState: SimState = {
       heater_1: 0,
       heater_2: 0,
-      heater_3: 0,
-      motor_speed: 0,
+      screw_motor_speed: 0,
       filament_diameter: 0,
-      winder_speed: 0,
+      filament_diameter_setting: 2.85,
+      spool_motor_speed: 0,
       running: true,
     };
     const data = generateTelemetry(zeroState, () => 1.0); // no anomaly
@@ -112,21 +112,20 @@ describe("generateTelemetry edge cases", () => {
     const negState: SimState = {
       heater_1: -50,
       heater_2: -50,
-      heater_3: -50,
-      motor_speed: -10,
+      screw_motor_speed: -10,
       filament_diameter: -1.0,
-      winder_speed: -5,
+      filament_diameter_setting: 2.85,
+      spool_motor_speed: -5,
       running: true,
     };
     const data = generateTelemetry(negState, () => 1.0); // no anomaly
     // Temperature readings should never be negative — this is physically impossible
     expect(data.heater_1).toBeGreaterThanOrEqual(0);
     expect(data.heater_2).toBeGreaterThanOrEqual(0);
-    expect(data.heater_3).toBeGreaterThanOrEqual(0);
-    // Motor/winder/diameter should also be non-negative
-    expect(data.motor_speed).toBeGreaterThanOrEqual(0);
+    // Motor/diameter should also be non-negative
+    expect(data.screw_motor_speed).toBeGreaterThanOrEqual(0);
     expect(data.filament_diameter).toBeGreaterThanOrEqual(0);
-    expect(data.winder_speed).toBeGreaterThanOrEqual(0);
+    expect(data.spool_motor_speed).toBeGreaterThanOrEqual(0);
   });
 
   it("SEDGE-10: very high state values with anomaly produce spikeHigh", () => {
@@ -154,12 +153,12 @@ describe("generateTelemetry edge cases", () => {
     // This is acceptable — 2.5mm is a physically possible diameter
   });
 
-  // SEDGE-13: Anomaly spikeLow=0 for motor_speed/winder_speed
+  // SEDGE-13: Anomaly spikeLow=0 for screw_motor_speed/spool_motor_speed
   // Motor speed = 0 is valid (motor stopped), not a sensor error
-  it("SEDGE-13: motor_speed spikeLow=0 is valid (represents stopped motor)", () => {
+  it("SEDGE-13: screw_motor_speed spikeLow=0 is valid (represents stopped motor)", () => {
     const data = generateTelemetry(DEFAULT_STATE, () => ANOMALY_CHANCE / 2 + 0.001);
-    // spikeLow for motor_speed is 0 — represents a stopped motor, physically valid
-    expect(data.motor_speed).toBeGreaterThanOrEqual(0);
+    // spikeLow for screw_motor_speed is 0 — represents a stopped motor, physically valid
+    expect(data.screw_motor_speed).toBeGreaterThanOrEqual(0);
   });
 });
 
@@ -168,16 +167,16 @@ describe("generateTelemetry edge cases", () => {
 // ═══════════════════════════════════════════════════════════════════════════
 
 describe("applyCommand edge cases", () => {
-  it("SEDGE-14: START when already running resets motor/winder to defaults", () => {
+  it("SEDGE-14: START when already running resets motors to defaults", () => {
     const runningState: SimState = {
       ...DEFAULT_STATE,
-      motor_speed: 55,
-      winder_speed: 40,
+      screw_motor_speed: 55,
+      spool_motor_speed: 40,
       running: true,
     };
     const next = applyCommand(runningState, { type: "START" });
-    expect(next.motor_speed).toBe(30);
-    expect(next.winder_speed).toBe(25);
+    expect(next.screw_motor_speed).toBe(30);
+    expect(next.spool_motor_speed).toBe(25);
     expect(next.running).toBe(true);
   });
 
@@ -192,48 +191,44 @@ describe("applyCommand edge cases", () => {
     expect(next.heater_1).toBe(0);
   });
 
-  // SEDGE-16: STOP should zero motor/winder speeds for safety
-  // CURRENT: STOP only sets running=false, motors keep spinning!
-  // EXPECTED: STOP should zero motor_speed and winder_speed (safety requirement)
-  // This is a critical safety bug — a stopped machine should not have spinning motors
-  it("SEDGE-16: STOP should zero motor_speed and winder_speed (safety)", () => {
+  // SEDGE-16: STOP should zero motor speeds for safety
+  // A stopped machine should not have spinning motors
+  it("SEDGE-16: STOP should zero screw_motor_speed and spool_motor_speed (safety)", () => {
     const runningState: SimState = {
       ...DEFAULT_STATE,
-      motor_speed: 45,
-      winder_speed: 30,
+      screw_motor_speed: 45,
+      spool_motor_speed: 30,
       running: true,
     };
     const next = applyCommand(runningState, { type: "STOP" });
     expect(next.running).toBe(false);
     // SAFETY: Stopped machine must not have spinning motors
-    expect(next.motor_speed).toBe(0);
-    expect(next.winder_speed).toBe(0);
+    expect(next.screw_motor_speed).toBe(0);
+    expect(next.spool_motor_speed).toBe(0);
   });
 
   it("SEDGE-17: rapid command sequence (EMERGENCY_STOP → START → STOP)", () => {
     let state = { ...DEFAULT_STATE };
     state = applyCommand(state, { type: "EMERGENCY_STOP" });
     expect(state.running).toBe(false);
-    expect(state.motor_speed).toBe(0);
+    expect(state.screw_motor_speed).toBe(0);
 
     state = applyCommand(state, { type: "START" });
     expect(state.running).toBe(true);
-    expect(state.motor_speed).toBe(30);
+    expect(state.screw_motor_speed).toBe(30);
 
     state = applyCommand(state, { type: "STOP" });
     expect(state.running).toBe(false);
     // After STOP, motors should be 0 (see SEDGE-16)
-    expect(state.motor_speed).toBe(0);
+    expect(state.screw_motor_speed).toBe(0);
   });
 
-  // SEDGE-18: SET_MOTOR_SPEED with negative value should be rejected
-  // CURRENT: Negative motor speed accepted → simulates reverse rotation (invalid)
-  // EXPECTED: Should clamp to 0 or reject
-  it("SEDGE-18: SET_MOTOR_SPEED with negative value should be clamped to 0", () => {
+  // SEDGE-18: SET_SCREW_MOTOR_SPEED with negative value should be rejected
+  it("SEDGE-18: SET_SCREW_MOTOR_SPEED with negative value should be clamped to 0", () => {
     const next = applyCommand(DEFAULT_STATE, {
-      type: "SET_MOTOR_SPEED",
+      type: "SET_SCREW_MOTOR_SPEED",
       value: -10,
     });
-    expect(next.motor_speed).toBeGreaterThanOrEqual(0);
+    expect(next.screw_motor_speed).toBeGreaterThanOrEqual(0);
   });
 });

@@ -16,15 +16,15 @@ export default function Dashboard() {
     .map((item) => ({
       time: item.timestamp
         ? new Date(
-            item.timestamp.endsWith("Z") || item.timestamp.includes("+")
-              ? item.timestamp
-              : item.timestamp.replace(" ", "T") + "Z"
-          ).toLocaleTimeString("en-US", {
-            hour12: false,
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit",
-          })
+          item.timestamp.endsWith("Z") || item.timestamp.includes("+")
+            ? item.timestamp
+            : item.timestamp.replace(" ", "T") + "Z"
+        ).toLocaleTimeString("en-US", {
+          hour12: false,
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        })
         : "--:--:--",
       diameter: item.filament_diameter ?? 0,
     }));
@@ -41,17 +41,12 @@ export default function Dashboard() {
             <TemperatureGauge
               title="HEATER 1"
               temperature={telemetry?.heater_1 ?? 0}
-              setPoint={telemetry?.set_point_1 ?? 220}
+              setPoint={telemetry?.set_point ?? 220}
             />
             <TemperatureGauge
               title="HEATER 2"
               temperature={telemetry?.heater_2 ?? 0}
-              setPoint={telemetry?.set_point_2 ?? 215}
-            />
-            <TemperatureGauge
-              title="HEATER 3"
-              temperature={telemetry?.heater_3 ?? 0}
-              setPoint={telemetry?.set_point_3 ?? 210}
+              setPoint={telemetry?.set_point ?? 220}
             />
           </div>
 
@@ -59,14 +54,17 @@ export default function Dashboard() {
             <DiameterChart
               data={chartData}
               currentValue={telemetry?.filament_diameter}
-              target={2.85}
+              target={telemetry?.filament_diameter_setting ?? 2.85}
             />
           </div>
         </div>
 
         <div className="dashboard__right-column">
           <div className="dashboard__motor-rpm-row">
-            <MotorRPMSlider rpm={telemetry?.motor_speed ?? 0} />
+            <MotorRPMSlider rpm={telemetry?.screw_motor_speed ?? 0} title="SCREW MOTOR RPM" />
+          </div>
+          <div className="dashboard__motor-rpm-row">
+            <MotorRPMSlider rpm={telemetry?.spool_motor_speed ?? 0} title="SPOOL MOTOR RPM" />
           </div>
 
           <div className="dashboard__system-status-row">

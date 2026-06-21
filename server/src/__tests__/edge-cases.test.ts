@@ -36,10 +36,9 @@ function makeTelemetry(overrides: Partial<TelemetryData> = {}): TelemetryData {
     device_id: "esp32-edge-test",
     heater_1: 200,
     heater_2: 210,
-    heater_3: 195,
-    motor_speed: 30,
+    screw_motor_speed: 30,
     filament_diameter: 2.85,
-    winder_speed: 25,
+    spool_motor_speed: 25,
     timestamp: new Date().toISOString(),
     ...overrides,
   };
@@ -251,7 +250,7 @@ describe("Server Edge Cases & Stress Tests", () => {
         { type: "STOP" },
         { type: "EMERGENCY_STOP" },
         { type: "SET_TEMPERATURE", zone: 1, value: 200 },
-        { type: "SET_MOTOR_SPEED", value: 40 },
+        { type: "SET_SCREW_MOTOR_SPEED", value: 40 },
       ];
 
       const requests = commands.map((cmd) =>

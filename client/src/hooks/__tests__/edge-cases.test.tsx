@@ -62,10 +62,9 @@ function makeTelemetry(overrides: Partial<TelemetryData> = {}): TelemetryData {
     device_id: "edge-test",
     heater_1: 200,
     heater_2: 200,
-    heater_3: 200,
-    motor_speed: 30,
+    screw_motor_speed: 30,
     filament_diameter: 2.85,
-    winder_speed: 25,
+    spool_motor_speed: 25,
     timestamp: new Date().toISOString(),
     ...overrides,
   };
@@ -148,27 +147,27 @@ describe("useAlerts Edge Cases", () => {
   // Motor & Winder Edge Values
   // ═══════════════════════════════════════════════════════════════════════
 
-  it("CEDGE-06: motor speed = 0 triggers danger stall alert", () => {
+  it("CEDGE-06: screw motor speed = 0 triggers danger stall alert", () => {
     const { result } = renderHook(() => useAlerts(), { wrapper: Wrapper });
-    pushTelemetry(makeTelemetry({ motor_speed: 0 }));
+    pushTelemetry(makeTelemetry({ screw_motor_speed: 0 }));
 
     const stall = result.current.find((a) => a.message.includes("stall"));
     expect(stall).toBeDefined();
     expect(stall!.type).toBe("danger");
   });
 
-  it("CEDGE-07: motor speed > 60 triggers high-speed warning", () => {
+  it("CEDGE-07: screw motor speed > 60 triggers high-speed warning", () => {
     const { result } = renderHook(() => useAlerts(), { wrapper: Wrapper });
-    pushTelemetry(makeTelemetry({ motor_speed: 65 }));
+    pushTelemetry(makeTelemetry({ screw_motor_speed: 65 }));
 
     const high = result.current.find((a) => a.message.includes("abnormally high"));
     expect(high).toBeDefined();
     expect(high!.type).toBe("warning");
   });
 
-  it("CEDGE-08: winder speed = 0 triggers stopped warning", () => {
+  it("CEDGE-08: spool motor speed = 0 triggers stopped warning", () => {
     const { result } = renderHook(() => useAlerts(), { wrapper: Wrapper });
-    pushTelemetry(makeTelemetry({ winder_speed: 0 }));
+    pushTelemetry(makeTelemetry({ spool_motor_speed: 0 }));
 
     const stopped = result.current.find((a) => a.message.includes("production halted"));
     expect(stopped).toBeDefined();
@@ -206,7 +205,6 @@ describe("useAlerts Edge Cases", () => {
       pushTelemetry(makeTelemetry({
         heater_1: 240,
         heater_2: 240,
-        heater_3: 240,
       }));
     }
 
@@ -235,7 +233,7 @@ describe("useWebSocket Edge Cases", () => {
   it("CEDGE-11: sendCommand when WS not OPEN does not crash", () => {
     // The real hook's sendCommand checks readyState === OPEN before sending.
     // When WS is not open, it silently skips — no throw.
-    const sendCommand = (cmd: DeviceCommand, wsReadyState = WebSocket.CLOSING) => {
+    const sendCommand = (cmd: DeviceCommand, wsReadyState: number = WebSocket.CLOSING) => {
       if (wsReadyState === WebSocket.OPEN) {
         // would send — but we're not open, so skip
       }

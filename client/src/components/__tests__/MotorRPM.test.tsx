@@ -20,8 +20,13 @@ describe("MotorRPM Component", () => {
     expect(screen.getByText("RPM")).toBeInTheDocument();
   });
 
-  it("CMP-MOT-03: renders title header", () => {
+  it("CMP-MOT-03: renders default title header", () => {
     render(<MotorRPM rpm={30} />);
     expect(screen.getByText("EXTRUDER MOTOR RPM")).toBeInTheDocument();
+  });
+
+  it("CMP-MOT-04: renders custom title when provided", () => {
+    render(<MotorRPM rpm={30} title="SCREW MOTOR RPM" />);
+    expect(screen.getByText("SCREW MOTOR RPM")).toBeInTheDocument();
   });
 });

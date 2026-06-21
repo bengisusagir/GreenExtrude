@@ -3,6 +3,7 @@ import { useTelemetryHealth } from "../context/TelemetryHealthContext";
 import { useTelemetry } from "../context/TelemetryContext";
 import { computeQualityStats, toHtmlTable, downloadHtmlAsXls } from "../utils/reportExport";
 import "./styles/NavigationBar.sass";
+import { Snackbar, Alert } from "@mui/material";
 
 interface NavigationBarProps {
   activePage?: "dashboard" | "settings";
@@ -18,6 +19,9 @@ export default function NavigationBar({
   const { isHealthy } = useTelemetryHealth();
   const { isConnected, sendCommand, history } = useTelemetry();
   const [showReport, setShowReport] = useState(false);
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastSeverity, setToastSeverity] = useState<"success" | "error">("success");
 
   const stats = useMemo(() => computeQualityStats(history), [history]);
 
@@ -30,12 +34,12 @@ export default function NavigationBar({
     onNavigate?.(page);
   };
 
-  const handleStart = () => {
-    sendCommand({ type: "START", timestamp: new Date().toISOString() });
-  };
 
   const handleEmergencyStop = () => {
     sendCommand({ type: "EMERGENCY_STOP", timestamp: new Date().toISOString() });
+    setToastMessage("Emergency stop triggered. Process halted.");
+    setToastSeverity("error");
+    setToastOpen(true);
   };
 
   const handleExportReport = useCallback(async () => {
@@ -72,18 +76,16 @@ export default function NavigationBar({
       <nav className="nav-bar__nav">
         <a
           href="#"
-          className={`nav-bar__link ${
-            activePage === "dashboard" ? "nav-bar__link--active" : ""
-          }`}
+          className={`nav-bar__link ${activePage === "dashboard" ? "nav-bar__link--active" : ""
+            }`}
           onClick={(e) => handleNavClick(e, "dashboard")}
         >
           Dashboard
         </a>
         <a
           href="#"
-          className={`nav-bar__link ${
-            activePage === "settings" ? "nav-bar__link--active" : ""
-          }`}
+          className={`nav-bar__link ${activePage === "settings" ? "nav-bar__link--active" : ""
+            }`}
           onClick={(e) => handleNavClick(e, "settings")}
         >
           Settings
@@ -91,14 +93,6 @@ export default function NavigationBar({
       </nav>
 
       <div className="nav-bar__actions">
-        <button
-          className="nav-bar__ctrl-btn nav-bar__ctrl-btn--start"
-          onClick={handleStart}
-          disabled={!isConnected}
-          title="Start extrusion"
-        >
-          ▶ START
-        </button>
         <button
           className="nav-bar__ctrl-btn nav-bar__ctrl-btn--estop"
           onClick={handleEmergencyStop}
@@ -115,7 +109,7 @@ export default function NavigationBar({
             disabled={!stats}
             title="Filament quality report"
           >
-          Report {showReport ? " ▲" : " ▼"}
+            Report {showReport ? " ▲" : " ▼"}
           </button>
 
           {showReport && stats && (
@@ -169,17 +163,35 @@ export default function NavigationBar({
 
         <div className="nav-bar__system-status">
           <span
-            className={`nav-bar__status-dot ${
-              isHealthy ? "nav-bar__status-dot--online" : ""
-            }`}
+            className={`nav-bar__status-dot ${isHealthy ? "nav-bar__status-dot--online" : ""
+              }`}
           />
-          <span className={`nav-bar__status-text ${
-              isHealthy ? "nav-bar__status-text--online" : ""
+          <span className={`nav-bar__status-text ${isHealthy ? "nav-bar__status-text--online" : ""
             }`}>
             {isHealthy ? "LIVE" : "OFFLINE"}
           </span>
         </div>
       </div>
+
+      <Snackbar
+        open={toastOpen}
+        autoHideDuration={4000}
+        onClose={() => setToastOpen(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+      >
+        <Alert
+          onClose={() => setToastOpen(false)}
+          severity={toastSeverity}
+          variant="filled"
+          sx={{
+            width: "100%",
+            bgcolor: toastSeverity === "success" ? "#2ECC71" : "#EF4444",
+            color: "#FFFFFF"
+          }}
+        >
+          {toastMessage}
+        </Alert>
+      </Snackbar>
     </header>
   );
 }

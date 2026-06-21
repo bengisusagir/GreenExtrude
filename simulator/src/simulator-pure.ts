@@ -18,27 +18,25 @@ export const DEVICE_ID = "esp32-simulator-01";
 export interface SimState {
   heater_1: number;
   heater_2: number;
-  heater_3: number;
-  motor_speed: number;
+  screw_motor_speed: number;
   filament_diameter: number;
-  winder_speed: number;
-  set_point_1: number;
-  set_point_2: number;
-  set_point_3: number;
+  filament_diameter_setting: number;
+  spool_motor_speed: number;
+  set_point: number;
   running: boolean;
+  fans_on: boolean;
 }
 
 export const DEFAULT_STATE: SimState = {
   heater_1: 180,
   heater_2: 200,
-  heater_3: 195,
-  motor_speed: 30,
+  screw_motor_speed: 30,
   filament_diameter: 2.85,
-  winder_speed: 25,
-  set_point_1: 220,
-  set_point_2: 215,
-  set_point_3: 210,
+  filament_diameter_setting: 2.85,
+  spool_motor_speed: 25,
+  set_point: 220,
   running: true,
+  fans_on: true,
 };
 
 // ─── Pure Functions ────────────────────────────────────────────────────────
@@ -83,23 +81,21 @@ export function generateTelemetry(
 ): import("../../shared/types").TelemetryData {
   const temp1 = addNoise(state.heater_1, 3);
   const temp2 = addNoise(state.heater_2, 2);
-  const temp3 = addNoise(state.heater_3, 2.5);
-  const motor = addNoise(state.motor_speed, 1);
+  const screwMotor = addNoise(state.screw_motor_speed, 1);
   const diameter = addNoise(state.filament_diameter, 0.08);
-  const winder = addNoise(state.winder_speed, 0.5);
+  const spoolMotor = addNoise(state.spool_motor_speed, 0.5);
 
   return {
     device_id: DEVICE_ID,
     // Temperature readings can never be negative — clamp after noise/anomaly
     heater_1: Math.max(0, maybeInjectAnomaly(temp1, state.heater_1, 245, 50, randomProvider())),
     heater_2: Math.max(0, maybeInjectAnomaly(temp2, state.heater_2, 250, 40, randomProvider())),
-    heater_3: Math.max(0, maybeInjectAnomaly(temp3, state.heater_3, 240, 55, randomProvider())),
-    motor_speed: Math.max(0, maybeInjectAnomaly(motor, state.motor_speed, 80, 0, randomProvider())),
+    screw_motor_speed: Math.max(0, maybeInjectAnomaly(screwMotor, state.screw_motor_speed, 80, 0, randomProvider())),
     filament_diameter: Math.max(0, maybeInjectAnomaly(diameter, state.filament_diameter, 3.25, 2.5, randomProvider())),
-    winder_speed: Math.max(0, maybeInjectAnomaly(winder, state.winder_speed, 70, 0, randomProvider())),
-    set_point_1: state.set_point_1,
-    set_point_2: state.set_point_2,
-    set_point_3: state.set_point_3,
+    filament_diameter_setting: state.filament_diameter_setting,
+    spool_motor_speed: Math.max(0, maybeInjectAnomaly(spoolMotor, state.spool_motor_speed, 70, 0, randomProvider())),
+    set_point: state.set_point,
+    fans_on: state.fans_on,
     timestamp: new Date().toISOString(),
   };
 }
@@ -112,43 +108,47 @@ import type { DeviceCommand } from "../../shared/types";
  */
 export function applyCommand(state: SimState, cmd: DeviceCommand): SimState {
   const next = { ...state };
-{ next.heater_1 = cmd.value ?? next.heater_1; next.set_point_1 = cmd.value ?? next.set_point_1; }
-      if (cmd.zone === 2) { next.heater_2 = cmd.value ?? next.heater_2; next.set_point_2 = cmd.value ?? next.set_point_2; }
-      if (cmd.zone === 3) { next.heater_3 = cmd.value ?? next.heater_3; next.set_point_3 = cmd.value ?? next.set_point_3; }
-      if (cmd.zone === 1) next.heater_1 = cmd.value ?? next.heater_1;
-      if (cmd.zone === 2) next.heater_2 = cmd.value ?? next.heater_2;
-      if (cmd.zone === 3) next.heater_3 = cmd.value ?? next.heater_3;
+
+  switch (cmd.type) {
+    case "SET_TEMPERATURE":
+      next.heater_1 = cmd.value ?? next.heater_1; next.set_point = cmd.value ?? next.set_point;
       break;
 
-    case "SET_MOTOR_SPEED":
-      next.motor_speed = Math.max(0, cmd.value ?? next.motor_speed);
+    case "SET_SCREW_MOTOR_SPEED":
+      next.screw_motor_speed = Math.max(0, cmd.value ?? next.screw_motor_speed);
       break;
 
-    case "SET_WINDER_SPEED":
-      next.winder_speed = Math.max(0, cmd.value ?? next.winder_speed);
+    case "SET_SPOOL_MOTOR_SPEED":
+      next.spool_motor_speed = Math.max(0, cmd.value ?? next.spool_motor_speed);
       break;
 
-    case "SET_PID":
-      console.log(`[SIM] PID ${cmd.zone === 1 ? "P" : cmd.zone === 2 ? "I" : "D"}-Gain set to ${cmd.value}`);
+    case "SET_FILAMENT_DIAMETER":
+      next.filament_diameter_setting = cmd.value ?? next.filament_diameter_setting;
+      break;
+
+    case "SET_FANS":
+      next.fans_on = !!cmd.value;
       break;
 
     case "EMERGENCY_STOP":
       next.running = false;
-      next.motor_speed = 0;
-      next.winder_speed = 0;
+      next.screw_motor_speed = 0;
+      next.spool_motor_speed = 0;
+      next.fans_on = false;
       break;
 
     case "START":
       next.running = true;
-      next.motor_speed = 30;
-      next.winder_speed = 25;
+      next.screw_motor_speed = 30;
+      next.spool_motor_speed = 25;
       break;
 
     case "STOP":
       next.running = false;
-      // SAFETY: Stopped machine must not have spinning motors/winder
-      next.motor_speed = 0;
-      next.winder_speed = 0;
+      // SAFETY: Stopped machine must not have spinning motors
+      next.screw_motor_speed = 0;
+      next.spool_motor_speed = 0;
+      next.fans_on = false;
       break;
 
     default:

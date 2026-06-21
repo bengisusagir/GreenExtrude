@@ -17,7 +17,7 @@ export interface QualityStats {
 export function computeQualityStats(history: TelemetryData[]): QualityStats | null {
   const diameters = history
     .map((h) => h.filament_diameter)
-    .filter((d): d is number => d !== undefined && d !== null && d > 0);
+    .filter((d): d is number => d !== undefined && d !== null && d >= 0);
 
   if (diameters.length === 0) return null;
 
@@ -39,9 +39,11 @@ export function computeQualityStats(history: TelemetryData[]): QualityStats | nu
 }
 
 function fmtTimestamp(ts?: string): string {
-  return ts
-    ? new Date(ts).toLocaleString("tr-TR", { hour12: false }).replace(" ", " ")
-    : "—";
+  if (!ts) return "—";
+  const normalized = ts.endsWith("Z") || ts.includes("+")
+    ? ts
+    : ts.replace(" ", "T") + "Z";
+  return new Date(normalized).toLocaleString("tr-TR", { hour12: false });
 }
 
 export function toHtmlTable(
@@ -52,13 +54,12 @@ export function toHtmlTable(
     .map(
       (r, i) =>
         `<tr${i % 2 === 0 ? ' style="background:#f8f9fa"' : ""}>
-          <td style="padding:4px 8px;border:1px solid #dee2e6">${fmtTimestamp(r.timestamp)}</td>
-          <td style="padding:4px 8px;border:1px solid #dee2e6;text-align:center">${r.heater_1}</td>
-          <td style="padding:4px 8px;border:1px solid #dee2e6;text-align:center">${r.heater_2}</td>
-          <td style="padding:4px 8px;border:1px solid #dee2e6;text-align:center">${r.heater_3}</td>
-          <td style="padding:4px 8px;border:1px solid #dee2e6;text-align:center">${r.motor_speed}</td>
-          <td style="padding:4px 8px;border:1px solid #dee2e6;text-align:center">${r.filament_diameter}</td>
-          <td style="padding:4px 8px;border:1px solid #dee2e6;text-align:center">${r.winder_speed}</td>
+          <td style="padding:4px 8px;border:1px solid #dee2e6;mso-number-format:'\\@'">${fmtTimestamp(r.timestamp)}</td>
+          <td style="padding:4px 8px;border:1px solid #dee2e6;text-align:center;mso-number-format:'\\@'">${r.heater_1}</td>
+          <td style="padding:4px 8px;border:1px solid #dee2e6;text-align:center;mso-number-format:'\\@'">${r.heater_2}</td>
+          <td style="padding:4px 8px;border:1px solid #dee2e6;text-align:center;mso-number-format:'\\@'">${r.screw_motor_speed}</td>
+          <td style="padding:4px 8px;border:1px solid #dee2e6;text-align:center;mso-number-format:'\\@'">${r.filament_diameter}</td>
+          <td style="padding:4px 8px;border:1px solid #dee2e6;text-align:center;mso-number-format:'\\@'">${r.spool_motor_speed}</td>
         </tr>`
     )
     .join("\n");
@@ -85,10 +86,9 @@ export function toHtmlTable(
     <th style="padding:6px 8px;border:1px solid #27ae60;text-align:left">Timestamp</th>
     <th style="padding:6px 8px;border:1px solid #27ae60;text-align:center">Heater 1</th>
     <th style="padding:6px 8px;border:1px solid #27ae60;text-align:center">Heater 2</th>
-    <th style="padding:6px 8px;border:1px solid #27ae60;text-align:center">Heater 3</th>
-    <th style="padding:6px 8px;border:1px solid #27ae60;text-align:center">Motor RPM</th>
+    <th style="padding:6px 8px;border:1px solid #27ae60;text-align:center">Screw Motor RPM</th>
     <th style="padding:6px 8px;border:1px solid #27ae60;text-align:center">Filament Ø (mm)</th>
-    <th style="padding:6px 8px;border:1px solid #27ae60;text-align:center">Winder RPM</th>
+    <th style="padding:6px 8px;border:1px solid #27ae60;text-align:center">Spool Motor RPM</th>
   </tr>
 </thead>
 <tbody>

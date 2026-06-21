@@ -41,7 +41,7 @@ export function useAlerts(): AlertItem[] {
 
     const { WARNING: TEMP_WARN, DANGER: TEMP_DANGER } = SENSOR_THRESHOLDS.TEMPERATURE;
 
-    for (const zone of [1, 2, 3]) {
+    for (const zone of [1, 2]) {
       const temp = telemetry[`heater_${zone}` as keyof typeof telemetry] as number;
       if (!temp || typeof temp !== "number") continue;
 
@@ -56,7 +56,10 @@ export function useAlerts(): AlertItem[] {
       }
     }
 
-    const { TARGET, WARNING_MIN, WARNING_MAX, DANGER_MIN, DANGER_MAX } = SENSOR_THRESHOLDS.FILAMENT_DIAMETER;
+    const activePreset = (telemetry.filament_diameter_setting === 1.75 || telemetry.filament_diameter_setting === 2.85)
+      ? telemetry.filament_diameter_setting
+      : 2.85;
+    const { TARGET, WARNING_MIN, WARNING_MAX, DANGER_MIN, DANGER_MAX } = SENSOR_THRESHOLDS.FILAMENT_DIAMETER[activePreset];
     const dia = telemetry.filament_diameter;
 
     if (dia !== undefined && typeof dia === "number") {
@@ -67,21 +70,21 @@ export function useAlerts(): AlertItem[] {
       }
     }
 
-    const motor = telemetry.motor_speed;
-    if (motor !== undefined && typeof motor === "number") {
-      if (motor === 0) {
-        check("motor-stalled", "danger", `Motor speed at 0 RPM — possible stall detected`);
-      } else if (motor > 60) {
-        check("motor-high", "warning", `Motor speed abnormally high: ${motor.toFixed(0)} RPM`);
+    const screwMotor = telemetry.screw_motor_speed;
+    if (screwMotor !== undefined && typeof screwMotor === "number") {
+      if (screwMotor === 0) {
+        check("screw-motor-stalled", "danger", `Screw motor speed at 0 RPM — possible stall detected`);
+      } else if (screwMotor > 60) {
+        check("screw-motor-high", "warning", `Screw motor speed abnormally high: ${screwMotor.toFixed(0)} RPM`);
       }
     }
 
-    const winder = telemetry.winder_speed;
-    if (winder !== undefined && typeof winder === "number") {
-      if (winder === 0) {
-        check("winder-stopped", "warning", `Winder speed at 0 RPM — production halted`);
-      } else if (winder > 55) {
-        check("winder-high", "warning", `Winder speed abnormally high: ${winder.toFixed(0)} RPM`);
+    const spoolMotor = telemetry.spool_motor_speed;
+    if (spoolMotor !== undefined && typeof spoolMotor === "number") {
+      if (spoolMotor === 0) {
+        check("spool-motor-stopped", "warning", `Spool motor speed at 0 RPM — production halted`);
+      } else if (spoolMotor > 55) {
+        check("spool-motor-high", "warning", `Spool motor speed abnormally high: ${spoolMotor.toFixed(0)} RPM`);
       }
     }
 

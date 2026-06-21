@@ -250,10 +250,10 @@ describe("Server HTTP API", () => {
       expect(res.body.success).toBe(true);
     });
 
-    it("API-14: accepts SET_MOTOR_SPEED with value", async () => {
+    it("API-14: accepts SET_SCREW_MOTOR_SPEED with value", async () => {
       const res = await request(server)
         .post("/api/command")
-        .send({ type: "SET_MOTOR_SPEED", value: 50 });
+        .send({ type: "SET_SCREW_MOTOR_SPEED", value: 50 });
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
     });

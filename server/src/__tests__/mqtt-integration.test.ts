@@ -51,30 +51,27 @@ const normalTelemetry: TelemetryData = {
   device_id: "esp32-001",
   heater_1: 210,
   heater_2: 210,
-  heater_3: 210,
-  motor_speed: 30,
+  screw_motor_speed: 30,
   filament_diameter: 2.85,
-  winder_speed: 25,
+  spool_motor_speed: 25,
 };
 
 const warningTelemetry: TelemetryData = {
   device_id: "esp32-001",
   heater_1: 220,
   heater_2: 220,
-  heater_3: 220,
-  motor_speed: 35,
+  screw_motor_speed: 35,
   filament_diameter: 2.79,
-  winder_speed: 28,
+  spool_motor_speed: 28,
 };
 
 const dangerTelemetry: TelemetryData = {
   device_id: "esp32-001",
   heater_1: 235,
   heater_2: 235,
-  heater_3: 235,
-  motor_speed: 40,
+  screw_motor_speed: 40,
   filament_diameter: 2.65,
-  winder_speed: 30,
+  spool_motor_speed: 30,
 };
 
 const fakeClient = { id: "test-esp32-001" };
@@ -171,10 +168,9 @@ describe("Suite A: MQTT Telemetry → Database Pipeline", () => {
     expect(row.device_id).toBe("esp32-001");
     expect(row.heater_1).toBe(210);
     expect(row.heater_2).toBe(210);
-    expect(row.heater_3).toBe(210);
-    expect(row.motor_speed).toBe(30);
+    expect(row.screw_motor_speed).toBe(30);
     expect(row.filament_diameter).toBeCloseTo(2.85);
-    expect(row.winder_speed).toBe(25);
+    expect(row.spool_motor_speed).toBe(25);
 
     database.closeDatabase();
   });
@@ -214,10 +210,9 @@ describe("Suite A: MQTT Telemetry → Database Pipeline", () => {
       device_id: "esp32-precise",
       heater_1: 210.123,
       heater_2: 215.456,
-      heater_3: 220.789,
-      motor_speed: 30.001,
+      screw_motor_speed: 30.001,
       filament_diameter: 2.847,
-      winder_speed: 25.999,
+      spool_motor_speed: 25.999,
     };
 
     aedes.emit("publish", makePublishPacket("greenextrude/telemetry", precise), fakeClient);
@@ -227,10 +222,9 @@ describe("Suite A: MQTT Telemetry → Database Pipeline", () => {
 
     expect(row.heater_1).toBeCloseTo(210.123, 3);
     expect(row.heater_2).toBeCloseTo(215.456, 3);
-    expect(row.heater_3).toBeCloseTo(220.789, 3);
-    expect(row.motor_speed).toBeCloseTo(30.001, 3);
+    expect(row.screw_motor_speed).toBeCloseTo(30.001, 3);
     expect(row.filament_diameter).toBeCloseTo(2.847, 3);
-    expect(row.winder_speed).toBeCloseTo(25.999, 3);
+    expect(row.spool_motor_speed).toBeCloseTo(25.999, 3);
 
     database.closeDatabase();
   });
@@ -245,10 +239,9 @@ describe("Suite A: MQTT Telemetry → Database Pipeline", () => {
       device_id: "esp32-partial",
       heater_1: undefined as any,
       heater_2: undefined as any,
-      heater_3: undefined as any,
-      motor_speed: undefined as any,
+      screw_motor_speed: undefined as any,
       filament_diameter: undefined as any,
-      winder_speed: undefined as any,
+      spool_motor_speed: undefined as any,
     };
 
     aedes.emit("publish", makePublishPacket("greenextrude/telemetry", partial), fakeClient);
@@ -260,10 +253,9 @@ describe("Suite A: MQTT Telemetry → Database Pipeline", () => {
     expect(row.device_id).toBe("esp32-partial");
     expect(row.heater_1).toBeNull();
     expect(row.heater_2).toBeNull();
-    expect(row.heater_3).toBeNull();
-    expect(row.motor_speed).toBeNull();
+    expect(row.screw_motor_speed).toBeNull();
     expect(row.filament_diameter).toBeNull();
-    expect(row.winder_speed).toBeNull();
+    expect(row.spool_motor_speed).toBeNull();
 
     database.closeDatabase();
   });
@@ -284,10 +276,9 @@ describe("Suite A: MQTT Telemetry → Database Pipeline", () => {
     expect(parsed.payload.device_id).toBe("esp32-001");
     expect(parsed.payload.heater_1).toBe(210);
     expect(parsed.payload.heater_2).toBe(210);
-    expect(parsed.payload.heater_3).toBe(210);
-    expect(parsed.payload.motor_speed).toBe(30);
+    expect(parsed.payload.screw_motor_speed).toBe(30);
     expect(parsed.payload.filament_diameter).toBeCloseTo(2.85);
-    expect(parsed.payload.winder_speed).toBe(25);
+    expect(parsed.payload.spool_motor_speed).toBe(25);
 
     database.closeDatabase();
   });
@@ -329,10 +320,9 @@ describe("Suite B: MQTT JSON Parsing & Error Handling", () => {
       device_id: "esp32-badtypes",
       heater_1: "hot",
       heater_2: "hot",
-      heater_3: "hot",
-      motor_speed: "fast",
+      screw_motor_speed: "fast",
       filament_diameter: "thick",
-      winder_speed: "fast",
+      spool_motor_speed: "fast",
     };
 
     aedes.emit("publish", makeRawPacket("greenextrude/telemetry", JSON.stringify(badTypes)), fakeClient);
@@ -408,7 +398,7 @@ describe("Suite B: MQTT JSON Parsing & Error Handling", () => {
     database.closeDatabase();
   });
 
-  it("publish telemetry with partial data (only 2 of 3 temperature zones) → stores available fields as NULL for missing", async () => {
+  it("publish telemetry with partial data (only 2 temperature zones) → stores available fields as NULL for missing", async () => {
     const { database, mqttHandler } = await getFreshModules();
     await database.initDatabase();
 
@@ -418,10 +408,9 @@ describe("Suite B: MQTT JSON Parsing & Error Handling", () => {
       device_id: "esp32-twozones",
       heater_1: 210,
       heater_2: 215,
-      heater_3: undefined as any,
-      motor_speed: 30,
+      screw_motor_speed: 30,
       filament_diameter: 2.85,
-      winder_speed: 25,
+      spool_motor_speed: 25,
     };
 
     aedes.emit("publish", makePublishPacket("greenextrude/telemetry", partial), fakeClient);
@@ -430,7 +419,6 @@ describe("Suite B: MQTT JSON Parsing & Error Handling", () => {
     expect(results).toHaveLength(1);
     expect(results[0].heater_1).toBe(210);
     expect(results[0].heater_2).toBe(215);
-    expect(results[0].heater_3).toBeNull();
 
     database.closeDatabase();
   });

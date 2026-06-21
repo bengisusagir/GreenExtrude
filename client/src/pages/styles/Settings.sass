@@ -20,12 +20,12 @@
     background: $color-bg-card
     border: 1px solid $color-border
     border-radius: $border-radius-lg
-    padding: $spacing-xl $spacing-lg
+    padding: $spacing-md $spacing-xl
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05)
     backdrop-filter: blur(10px)
     display: flex
     flex-direction: column
-    gap: $spacing-xl
+    gap: $spacing-lg
 
     @media (max-width: $breakpoint-md)
       padding: $spacing-lg
@@ -41,51 +41,89 @@
     padding-bottom: $spacing-sm
     border-bottom: 1px solid $color-border
 
-  // PID Control Section
-  &__pid-section
+  // Filament Diameter Preset Section
+  &__filament-section
     display: flex
     flex-direction: column
-    gap: $spacing-md
-
-  &__pid-row
-    display: flex
-    justify-content: center
     align-items: center
-    gap: 60px
+    gap: $spacing-sm
 
-  &__pid-label
-    font-size: 1.5rem
-    color: $color-text-secondary
-    font-weight: 500
-    letter-spacing: 0.5px
-    width: 120px
+  &__filament-dropdown
+    width: 100%
+    max-width: 300px
 
-  &__pid-input
-    width: 250px
-    height: 44px
+  &__select
+    width: 100%
+    height: 48px
     background: lighten($color-bg, 5%)
-    border: 2px solid #3B82F6
-    border-radius: 6px
+    border: 2px solid $color-secondary
+    border-radius: $border-radius
     color: $color-text
     text-align: center
-    font-size: 1.3rem
-    font-weight: 500
-    font-family: $font-mono
-    box-shadow: 0 0 12px rgba(59, 130, 246, 0.4)
-    transition: all $transition-fast ease
+    font-size: 1.2rem
+    font-weight: 600
+    font-family: $font-family
+    cursor: pointer
     outline: none
-
-    // Webkit spinner styling
-    &::-webkit-outer-spin-button,
-    &::-webkit-inner-spin-button
-      -webkit-appearance: none
-      margin: 0
+    transition: all $transition-fast ease
+    box-shadow: 0 0 12px rgba($color-secondary, 0.3)
 
     &:hover
-      box-shadow: 0 0 16px rgba(59, 130, 246, 0.6)
+      box-shadow: 0 0 16px rgba($color-secondary, 0.5)
 
     &:focus
-      box-shadow: 0 0 20px rgba(59, 130, 246, 0.8), inset 0 0 8px rgba(59, 130, 246, 0.2)
+      box-shadow: 0 0 20px rgba($color-secondary, 0.7)
+
+    option
+      background: $color-bg
+      color: $color-text
+
+  &__mismatch-banner
+    display: flex
+    align-items: center
+    justify-content: center
+    gap: 8px
+    background: rgba($color-warning, 0.1)
+    border: 1px solid rgba($color-warning, 0.4)
+    color: lighten($color-warning, 10%)
+    padding: 8px 16px
+    border-radius: $border-radius
+    font-size: 0.85rem
+    font-weight: 500
+    width: 100%
+    max-width: 500px
+    margin: 4px auto 0 auto
+    animation: fadeIn 0.25s ease
+
+  &__mismatch-icon
+    flex-shrink: 0
+    color: $color-warning
+
+  &__reset-btn
+    background: darken($color-warning, 10%)
+    border: none
+    border-radius: 4px
+    color: white
+    font-size: 0.75rem
+    font-weight: 700
+    padding: 4px 10px
+    cursor: pointer
+    transition: all $transition-fast ease
+    text-transform: uppercase
+    letter-spacing: 0.5px
+    margin-left: 6px
+
+    &:hover
+      background: $color-warning
+      box-shadow: 0 0 10px rgba($color-warning, 0.3)
+
+  @keyframes fadeIn
+    from
+      opacity: 0
+      transform: translateY(-4px)
+    to
+      opacity: 1
+      transform: translateY(0)
 
   // Temperature Set Points Section
   &__temp-section
@@ -109,6 +147,24 @@
       grid-template-columns: 1fr
       gap: $spacing-md
 
+    &--two
+      grid-template-columns: 1fr 1fr
+      max-width: 600px
+      margin: 0 auto
+
+      @media (max-width: $breakpoint-md)
+        grid-template-columns: 1fr
+        max-width: 100%
+
+    &--three
+      grid-template-columns: 1fr 1fr 1fr
+      max-width: 900px
+      margin: 0 auto
+
+      @media (max-width: $breakpoint-md)
+        grid-template-columns: 1fr
+        max-width: 100%
+
   &__temp-item
     display: flex
     flex-direction: column
@@ -120,46 +176,66 @@
     color: $color-text-secondary
     font-weight: 500
 
-  &__temp-input
-    width: 140px
-    height: 48px
+  &__temp-control
+    display: flex
+    align-items: center
+    background: lighten($color-bg, 3%)
     border: 2px solid $color-border
     border-radius: $border-radius
-    background: lighten($color-bg, 5%)
+    overflow: hidden
+    transition: all $transition-fast ease
+
+    &--zone1
+      border-color: #EF4444
+      box-shadow: 0 0 12px rgba(239, 68, 68, 0.3)
+      &:focus-within
+        box-shadow: 0 0 20px rgba(239, 68, 68, 0.6)
+
+    &--zone2
+      border-color: #3B82F6
+      box-shadow: 0 0 12px rgba(59, 130, 246, 0.3)
+      &:focus-within
+        box-shadow: 0 0 20px rgba(59, 130, 246, 0.6)
+
+    &:hover
+      filter: brightness(1.15)
+
+  &__temp-btn
+    display: flex
+    align-items: center
+    justify-content: center
+    width: 36px
+    height: 48px
+    background: transparent
+    border: none
+    color: $color-text-secondary
+    cursor: pointer
+    transition: all $transition-fast ease
+    padding: 0
+
+    &:hover
+      background: rgba(255, 255, 255, 0.08)
+      color: $color-text
+
+    &:active
+      background: rgba(255, 255, 255, 0.15)
+
+  &__temp-input
+    width: 68px
+    height: 46px
+    border: none !important
+    background: transparent !important
     color: $color-text
     text-align: center
     font-size: 1.4rem
     font-weight: 700
     font-family: $font-mono
     outline: none
-    transition: all $transition-fast ease
 
     &::-webkit-outer-spin-button,
     &::-webkit-inner-spin-button
       -webkit-appearance: none
       margin: 0
-
-    // Per-zone accent colors
-    &--zone1
-      border-color: #EF4444
-      box-shadow: 0 0 12px rgba(239, 68, 68, 0.3)
-      &:focus
-        box-shadow: 0 0 20px rgba(239, 68, 68, 0.6)
-
-    &--zone2
-      border-color: #3B82F6
-      box-shadow: 0 0 12px rgba(59, 130, 246, 0.3)
-      &:focus
-        box-shadow: 0 0 20px rgba(59, 130, 246, 0.6)
-
-    &--zone3
-      border-color: #22C55E
-      box-shadow: 0 0 12px rgba(34, 197, 94, 0.3)
-      &:focus
-        box-shadow: 0 0 20px rgba(34, 197, 94, 0.6)
-
-    &:hover
-      filter: brightness(1.2)
 
   // Motor Speed Slider Section
   &__motor-section
@@ -253,6 +329,65 @@
     font-size: 0.75rem
     color: $color-text-secondary
     font-weight: 400
+
+  // Cooling Fans Toggle (inside temp grid)
+  &__fans-control
+    display: flex
+    flex-direction: column
+    align-items: center
+    gap: $spacing-sm
+
+  &__fans-status
+    font-size: 0.95rem
+    font-weight: 700
+    font-family: $font-mono
+
+    &--on
+      color: $color-primary
+
+    &--off
+      color: $color-danger
+
+  &__fans-toggle
+    position: relative
+    display: inline-block
+    width: 64px
+    height: 34px
+    cursor: pointer
+
+  &__fans-checkbox
+    opacity: 0
+    width: 0
+    height: 0
+
+    &:checked + .settings__fans-slider
+      background-color: $color-primary
+      box-shadow: 0 0 12px rgba($color-primary, 0.5)
+
+    &:checked + .settings__fans-slider::before
+      transform: translateX(30px)
+
+  &__fans-slider
+    position: absolute
+    top: 0
+    left: 0
+    right: 0
+    bottom: 0
+    background-color: $color-border
+    border-radius: 34px
+    transition: all $transition-fast ease
+
+    &::before
+      content: ""
+      position: absolute
+      height: 26px
+      width: 26px
+      left: 4px
+      bottom: 4px
+      background-color: white
+      border-radius: 50%
+      transition: all $transition-fast ease
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3)
 
   // Action Buttons
   &__buttons

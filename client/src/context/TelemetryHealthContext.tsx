@@ -7,7 +7,7 @@ interface TelemetryHealthContextValue {
 
 const TelemetryHealthContext = createContext<TelemetryHealthContextValue | null>(null);
 
-const DEFAULT_TIMEOUT_MS = 2000;
+const DEFAULT_TIMEOUT_MS = 3000;
 
 const updateCallbacks: Set<() => void> = new Set();
 

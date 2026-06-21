@@ -102,6 +102,28 @@ export default function SystemStatus() {
               {isHealthy ? "Active" : "Inactive"}
             </span>
           </div>
+
+          <div className="system-status__item">
+            <div className="system-status__item-left">
+              <span className="system-status__dot system-status__dot--online" />
+              <span className="system-status__item-label">Filament Ø:</span>
+            </div>
+            <span className="system-status__item-value system-status__item-value--online">
+              {telemetry?.filament_diameter_setting
+                ? `${telemetry.filament_diameter_setting} mm`
+                : "---"}
+            </span>
+          </div>
+
+          <div className="system-status__item">
+            <div className="system-status__item-left">
+              <span className={`system-status__dot ${telemetry?.fans_on ? "system-status__dot--online" : "system-status__dot--offline"}`} />
+              <span className="system-status__item-label">Cooling Fans:</span>
+            </div>
+            <span className={`system-status__item-value ${telemetry?.fans_on ? "system-status__item-value--online" : "system-status__item-value--offline"}`}>
+              {telemetry?.fans_on !== undefined ? (telemetry.fans_on ? "ON" : "OFF") : "---"}
+            </span>
+          </div>
         </div>
       </div>
     </div>
